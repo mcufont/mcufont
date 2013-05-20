@@ -1,0 +1,7 @@
+unittests.cc
+*~
+*.bdf
+*.dat
+*.o
+compress
+unittests
