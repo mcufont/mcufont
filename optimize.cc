@@ -2,6 +2,7 @@
 #include "encode.hh"
 #include <random>
 #include <iostream>
+#include <set>
 
 typedef std::mt19937 rnd_t;
 
@@ -136,7 +137,7 @@ void optimize_trim(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
     
     if (end)
     {
-        d.replacement.erase(d.replacement.end() - end, d.replacement.end());
+        d.replacement.erase(d.replacement.end() - end, d.replacement.end() - 1);
     }
     
     trial.SetDictionaryEntry(index, d);
@@ -224,9 +225,38 @@ void update_scores(DataFile &datafile, bool verbose)
     }
 }
 
+void init_dictionary(DataFile &datafile)
+{
+    rnd_t rnd(datafile.GetSeed());
+    
+    std::set<DataFile::bitstring_t> seen_substrings;
+    std::set<DataFile::bitstring_t> added_substrings;
+    
+    size_t i = 0;
+    while (i < DataFile::dictionarysize)
+    {
+        DataFile::bitstring_t substring = *random_substring(datafile, rnd);
+        
+        if (!seen_substrings.count(substring))
+        {
+            seen_substrings.insert(substring);
+        }
+        else if (!added_substrings.count(substring))
+        {
+            // When we see a substring second time, add it.
+            DataFile::dictentry_t d;
+            d.score = 0;
+            d.replacement = substring;
+            datafile.SetDictionaryEntry(i, d);
+            i++;
+            added_substrings.insert(substring);
+        }
+    }
+}
+
 void optimize(DataFile &datafile, size_t iterations)
 {
-    bool verbose = true;
+    bool verbose = false;
     rnd_t rnd(datafile.GetSeed());
     
     update_scores(datafile, verbose);

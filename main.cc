@@ -53,6 +53,8 @@ int main(int argc, char **argv)
         
         std::unique_ptr<DataFile> f = LoadBDF(infile);
         
+        init_dictionary(*f);
+        
         std::ofstream outfile(dest);
         f->Save(outfile);
         
