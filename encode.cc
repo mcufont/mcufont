@@ -33,41 +33,66 @@ static encoded_font_t::rlestring_t encode_rle(const DataFile::bitstring_t &bits)
 // The resulting encoding may not be 100% optimal, but the algorithm is fast.
 struct dicttree_t
 {
-    typedef std::unique_ptr<dicttree_t> ptr;
-    
     int index; // Index of dictionary entry or -1 if just a intermediate node.
-    ptr zero;
-    ptr one;
+    dicttree_t *zero;
+    dicttree_t *one;
     
     bool ref; // True for ref-encoded dictionary entries.
     
-    dicttree_t(): index(-1), zero(nullptr), one(nullptr), ref(false) {}
-    ptr &walk(bool b) { return b ? one : zero; }
+    constexpr dicttree_t(): index(-1), zero(nullptr), one(nullptr), ref(false) {}
+    dicttree_t* &walk(bool b) { return b ? one : zero; }
+    const dicttree_t* walk(bool b) const { return b ? one : zero; }
+};
+
+// Preallocated array for tree nodes
+class TreeAllocator
+{
+public:
+    TreeAllocator(size_t count)
+    {
+        m_storage.reset(new dicttree_t[count]);
+        m_next = m_storage.get();
+        m_left = count;
+    }
+    
+    dicttree_t *allocate()
+    {
+        if (m_left == 0)
+            throw std::logic_error("Ran out of preallocated entries");
+        
+        m_left--;
+        return new (m_next++) dicttree_t;
+    }
+    
+private:
+    std::unique_ptr<dicttree_t[]> m_storage;
+    dicttree_t *m_next;
+    size_t m_left;
 };
 
 // Construct a lookup tree from the dictionary entries.
-static std::unique_ptr<dicttree_t> construct_tree(const std::vector<DataFile::dictentry_t> &dictionary)
+static dicttree_t* construct_tree(const std::vector<DataFile::dictentry_t> &dictionary, TreeAllocator &storage)
 {
-    dicttree_t::ptr root(new dicttree_t);
+    dicttree_t* root = storage.allocate();
     
     // Populate the hardcoded 0 and 1 entries
-    root->zero.reset(new dicttree_t);
+    root->zero = storage.allocate();
     root->zero->index = 0;
-    root->one.reset(new dicttree_t);
+    root->one = storage.allocate();
     root->one->index = 1;
     
     // Populate the rest of the entries
     size_t i = 0;
     for (DataFile::dictentry_t d : dictionary)
     {
-        dicttree_t* node = root.get();
+        dicttree_t* node = root;
         for (bool b : d.replacement)
         {
-            dicttree_t::ptr &branch = node->walk(b);
+            dicttree_t* &branch = node->walk(b);
             if (!branch)
-                branch.reset(new dicttree_t);
+                branch = storage.allocate();
             
-            node = branch.get();
+            node = branch;
         }
         
         if (node->index < 0)
@@ -82,7 +107,7 @@ static std::unique_ptr<dicttree_t> construct_tree(const std::vector<DataFile::di
 
 // Walk the tree as far as possible following the given bitstring iterator.
 // Returns number of bits encoded, and index is set to the dictionary reference.
-static size_t walk_tree(const std::unique_ptr<dicttree_t> &tree,
+static size_t walk_tree(const dicttree_t *tree,
                         DataFile::bitstring_t::const_iterator bits,
                         DataFile::bitstring_t::const_iterator bitsend,
                         int &index, bool is_glyph)
@@ -91,12 +116,11 @@ static size_t walk_tree(const std::unique_ptr<dicttree_t> &tree,
     size_t length = 0;
     index = -1;
     
-    dicttree_t* node = tree.get();
+    const dicttree_t* node = tree;
     while (bits != bitsend)
     {
         bool b = *bits++;
-        dicttree_t::ptr &branch = node->walk(b);
-        node = branch.get();
+        node = node->walk(b);
         
         if (!node)
             break;
@@ -121,7 +145,7 @@ static size_t walk_tree(const std::unique_ptr<dicttree_t> &tree,
 
 // Perform the reference encoding for a glyph entry.
 static encoded_font_t::refstring_t encode_ref(const DataFile::bitstring_t &bits,
-                                              const std::unique_ptr<dicttree_t> &tree,
+                                              const dicttree_t *tree,
                                               bool is_glyph)
 {
     encoded_font_t::refstring_t result;
@@ -163,6 +187,16 @@ static bool cmp_dict_coding(const DataFile::dictentry_t &a,
         return false;
 }
 
+size_t estimate_tree_node_count(const std::vector<DataFile::dictentry_t> &dict)
+{
+    size_t count = 3; // Preallocated entries
+    for (const DataFile::dictentry_t &d: dict)
+    {
+        count += d.replacement.size();
+    }
+    return count;
+}
+
 std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile)
 {
     std::unique_ptr<encoded_font_t> result(new encoded_font_t);
@@ -173,7 +207,9 @@ std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile)
     std::stable_sort(sorted_dict.begin(), sorted_dict.end(), cmp_dict_coding);
     
     // Build the binary tree for looking up references.
-    dicttree_t::ptr tree = construct_tree(sorted_dict);
+    size_t count = estimate_tree_node_count(sorted_dict);
+    TreeAllocator allocator(count);
+    dicttree_t* tree = construct_tree(sorted_dict, allocator);
     
     // Encode the dictionary entries, using either RLE or reference method.
     for (DataFile::dictentry_t d : sorted_dict)
