@@ -157,6 +157,66 @@ void optimize_trim(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
     }
 }
 
+// Switch random dictionary entry to use ref encoding or back to rle.
+void optimize_refdict(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
+{
+    DataFile trial = datafile;
+    std::uniform_int_distribution<size_t> dist1(0, DataFile::dictionarysize - 1);
+    size_t index = dist1(rnd);
+    DataFile::dictentry_t d = trial.GetDictionaryEntry(index);
+    
+    d.ref_encode = !d.ref_encode;
+    
+    trial.SetDictionaryEntry(index, d);
+    
+    size_t newsize = get_encoded_size(trial);
+    
+    if (newsize < size)
+    {
+        d.score = size - newsize;
+        datafile.SetDictionaryEntry(index, d);
+        size = newsize;
+        
+        if (verbose)
+            std::cout << "optimize_refdict: switched " << index
+                      << " to " << (d.ref_encode ? "ref" : "RLE")
+                      << ", score " << d.score << std::endl;
+    }
+}
+
+// Combine two random dictionary entries.
+void optimize_combine(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
+{
+    DataFile trial = datafile;
+    std::uniform_int_distribution<size_t> dist1(0, DataFile::dictionarysize - 1);
+    size_t worst = datafile.GetLowScoreIndex();
+    size_t index1 = dist1(rnd);
+    size_t index2 = dist1(rnd);
+    
+    const DataFile::bitstring_t &part1 = datafile.GetDictionaryEntry(index1).replacement;
+    const DataFile::bitstring_t &part2 = datafile.GetDictionaryEntry(index2).replacement;
+    
+    DataFile::dictentry_t d;
+    d.replacement = part1;
+    d.replacement.insert(d.replacement.end(), part2.begin(), part2.end());
+    d.ref_encode = true;
+    trial.SetDictionaryEntry(worst, d);
+    
+    size_t newsize = get_encoded_size(trial);
+    
+    if (newsize < size)
+    {
+        d.score = size - newsize;
+        datafile.SetDictionaryEntry(worst, d);
+        size = newsize;
+        
+        if (verbose)
+            std::cout << "optimize_combine: combined " << index1
+                      << " and " << index2 << " to replace " << worst
+                      << ", score " << d.score << std::endl;
+    }
+}
+
 // Discard a few dictionary entries and try to incrementally find better ones.
 void optimize_bigjump(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
 {
@@ -176,11 +236,13 @@ void optimize_bigjump(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose
     
     size_t newsize = get_encoded_size(trial);
     
-    for (size_t i = 0; i < 100; i++)
+    for (size_t i = 0; i < 25; i++)
     {
         optimize_worst(trial, newsize, rnd, false);
         optimize_any(trial, newsize, rnd, false);
         optimize_expand(trial, newsize, rnd, false);
+        optimize_refdict(trial, newsize, rnd, false);
+        optimize_combine(trial, newsize, rnd, false);
     }
     
     if (newsize < size)
@@ -269,9 +331,11 @@ void optimize(DataFile &datafile, size_t iterations)
         optimize_any(datafile, size, rnd, verbose);
         optimize_expand(datafile, size, rnd, verbose);
         optimize_trim(datafile, size, rnd, verbose);
+        optimize_refdict(datafile, size, rnd, verbose);
+        optimize_combine(datafile, size, rnd, verbose);
     }
     
-    optimize_bigjump(datafile, size, rnd, verbose);
+    //optimize_bigjump(datafile, size, rnd, verbose);
     
     std::uniform_int_distribution<size_t> dist(0, std::numeric_limits<uint32_t>::max());
     datafile.SetSeed(dist(rnd));

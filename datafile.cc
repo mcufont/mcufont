@@ -28,7 +28,8 @@ void DataFile::Save(std::ostream &file) const
     {
         if (d.replacement.size() != 0)
         {
-            file << "DictEntry " << d.score << " " << d.replacement << std::endl;
+            file << "DictEntry " << d.score << " ";
+            file << d.ref_encode << " " << d.replacement << std::endl;
         }
     }
     
@@ -87,7 +88,7 @@ std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
         else if (tag == "DictEntry")
         {
             dictentry_t d = {};
-            input >> d.score >> d.replacement;
+            input >> d.score >> d.ref_encode >> d.replacement;
             dictionary.push_back(d);
         }
         else if (tag == "Glyph")

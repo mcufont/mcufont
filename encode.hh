@@ -19,7 +19,8 @@ struct encoded_font_t
     // All other values mean dictionary entry at (i-2).
     typedef std::vector<uint8_t> refstring_t;
     
-    std::vector<rlestring_t> dictionary;
+    std::vector<rlestring_t> rle_dictionary;
+    std::vector<refstring_t> ref_dictionary;
     std::vector<refstring_t> glyphs;
 };
 
@@ -60,13 +61,15 @@ public:
         encoded_font_t::rlestring_t dict0 = {0x01, 0x81, 0x01, 0x81};
         encoded_font_t::rlestring_t dict1 = {0x04};
         encoded_font_t::rlestring_t dict2 = {0x84};
+        encoded_font_t::refstring_t dict3 = {4, 4};
         
-        TS_ASSERT(e->dictionary.at(0) == dict0);
-        TS_ASSERT(e->dictionary.at(1) == dict1);
-        TS_ASSERT(e->dictionary.at(2) == dict2);
+        TS_ASSERT(e->rle_dictionary.at(0) == dict0);
+        TS_ASSERT(e->rle_dictionary.at(1) == dict1);
+        TS_ASSERT(e->rle_dictionary.at(2) == dict2);
+        TS_ASSERT(e->ref_dictionary.at(0) == dict3);
         
         // Expected values for glyphs
-        encoded_font_t::refstring_t glyph0 = {4, 4, 4, 4, 4, 4};
+        encoded_font_t::refstring_t glyph0 = {7, 7, 7};
         encoded_font_t::refstring_t glyph1 = {4, 5, 5, 5, 5, 0, 0, 0, 1};
         encoded_font_t::refstring_t glyph2 = {5, 6, 0, 0, 0, 1, 1, 1, 5, 6, 2};
         
@@ -97,9 +100,10 @@ private:
         "MaxHeight 6\n"
         "BaselineX 1\n"
         "BaselineY 1\n"
-        "DictEntry 1 0101\n"
-        "DictEntry 1 0000\n"
-        "DictEntry 1 1111\n"
+        "DictEntry 1 0 0101\n"
+        "DictEntry 1 0 0000\n"
+        "DictEntry 1 0 1111\n"
+        "DictEntry 1 1 01010101\n"
         "Glyph 1 4 010101010101010101010101\n"
         "Glyph 2 4 010100000000000000000001\n"
         "Glyph 3 4 000011110001110000111100\n";

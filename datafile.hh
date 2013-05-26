@@ -16,6 +16,9 @@ public:
     {
         bitstring_t replacement; // The expanded version of this block.
         int score; // Number of bytes that having this entry saves.
+        bool ref_encode; // Encode using references to other dictionary entries.
+        
+        dictentry_t(): score(0), ref_encode(false) {}
     };
     
     struct glyphentry_t
@@ -142,9 +145,9 @@ private:
         "MaxHeight 6\n"
         "BaselineX 1\n"
         "BaselineY 1\n"
-        "DictEntry 5 01010\n"
-        "DictEntry 13 101010\n"
-        "DictEntry 1 101010\n"
+        "DictEntry 5 0 01010\n"
+        "DictEntry 13 0 101010\n"
+        "DictEntry 1 0 101010\n"
         "Glyph 1,2,3 4 010101010101010101010101\n"
         "Glyph 4 4 010101010101010101010101\n"
         "Glyph 5 4 010101010101010101010101\n";

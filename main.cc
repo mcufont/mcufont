@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
+#include <ctime>
 
 static std::string strip_extension(std::string filename)
 {
@@ -78,7 +79,7 @@ int main(int argc, char **argv)
         std::cout << "Current size of " << src << " is " << size << std::endl;
         return 0;
     }
-    else if (args.size() == 2 && args.at(0) == "optimize")
+    else if (args.size() >= 2 && args.at(0) == "optimize")
     {
         std::string src = args.at(1);
         std::ifstream infile(src);
@@ -91,13 +92,42 @@ int main(int argc, char **argv)
         
         std::unique_ptr<DataFile> f = DataFile::Load(infile);
         size_t oldsize = get_encoded_size(*f);
-        optimize(*f);
-        size_t newsize = get_encoded_size(*f);
         
-        std::ofstream outfile(src);
-        f->Save(outfile);
+        std::cout << "Original size is " << oldsize << " bytes" << std::endl;
+        std::cout << "Press ctrl-C at any time to stop." << std::endl;
+        std::cout << "Results are saved automatically after each iteration." << std::endl;
         
-        std::cout << "Old size " << oldsize << ", new size " << newsize << std::endl;
+        int limit = 100;
+        if (args.size() == 3)
+        {
+            limit = atoi(args.at(2).c_str());
+        }
+        
+        if (limit > 0)
+            std::cout << "Limit is " << limit << " iterations" << std::endl;
+        
+        int i = 0;
+        time_t oldtime = time(NULL);
+        while (!limit || i < limit)
+        {
+            optimize(*f);
+
+            size_t newsize = get_encoded_size(*f);
+            time_t newtime = time(NULL);
+            
+            int bytes_per_min = (oldsize - newsize) * 60 / (newtime - oldtime + 1);
+            
+            i++;
+            std::cout << "iteration " << i << ", size " << newsize
+                      << " bytes, speed " << bytes_per_min << " B/min"
+                      << std::endl;
+            
+            {
+                std::ofstream outfile(src);
+                f->Save(outfile);
+            }
+        }
+        
         return 0;
     }
     else if (args.size() == 2 && args.at(0) == "show_encoded")
@@ -115,9 +145,17 @@ int main(int argc, char **argv)
         std::unique_ptr<encoded_font_t> e = encode_font(*f);
     
         int i = 0;
-        for (encoded_font_t::rlestring_t d : e->dictionary)
+        for (encoded_font_t::rlestring_t d : e->rle_dictionary)
         {
-            std::cout << "Dict " << 4 + i++ << ": ";
+            std::cout << "Dict RLE " << 4 + i++ << ": ";
+            for (uint8_t v : d)
+                std::cout << std::setfill('0') << std::setw(2) << std::hex << (int)v << " ";
+            std::cout << std::endl;
+        }
+        
+        for (encoded_font_t::refstring_t d : e->ref_dictionary)
+        {
+            std::cout << "Dict Ref " << 4 + i++ << ": ";
             for (uint8_t v : d)
                 std::cout << std::setfill('0') << std::setw(2) << std::hex << (int)v << " ";
             std::cout << std::endl;

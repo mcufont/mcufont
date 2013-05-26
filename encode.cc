@@ -1,5 +1,6 @@
 #include "encode.hh"
 #include <algorithm>
+#include <stdexcept>
 
 // Perform the RLE encoding for a dictionary entry.
 static encoded_font_t::rlestring_t encode_rle(const DataFile::bitstring_t &bits)
@@ -38,7 +39,9 @@ struct dicttree_t
     ptr zero;
     ptr one;
     
-    dicttree_t(): index(-1), zero(nullptr), one(nullptr) {}
+    bool ref; // True for ref-encoded dictionary entries.
+    
+    dicttree_t(): index(-1), zero(nullptr), one(nullptr), ref(false) {}
     ptr &walk(bool b) { return b ? one : zero; }
 };
 
@@ -66,7 +69,12 @@ static std::unique_ptr<dicttree_t> construct_tree(const std::vector<DataFile::di
             
             node = branch.get();
         }
-        node->index = (i++) + 4;
+        
+        if (node->index < 0)
+        {
+            node->index = (i++) + 4;
+            node->ref = d.ref_encode;
+        }
     }
     
     return root;
@@ -77,7 +85,7 @@ static std::unique_ptr<dicttree_t> construct_tree(const std::vector<DataFile::di
 static size_t walk_tree(const std::unique_ptr<dicttree_t> &tree,
                         DataFile::bitstring_t::const_iterator bits,
                         DataFile::bitstring_t::const_iterator bitsend,
-                        int &index)
+                        int &index, bool is_glyph)
 {
     size_t best_length = 0;
     size_t length = 0;
@@ -95,31 +103,42 @@ static size_t walk_tree(const std::unique_ptr<dicttree_t> &tree,
         
         length++;
         
-        if (node->index >= 0)
+        if (is_glyph || !node->ref)
         {
-            index = node->index;
-            best_length = length;
+            if (node->index >= 0)
+            {
+                index = node->index;
+                best_length = length;
+            }
         }
     }
+    
+    if (index < 0)
+        throw std::logic_error("walk_tree failed to find a valid encoding");
     
     return best_length;
 }
 
 // Perform the reference encoding for a glyph entry.
 static encoded_font_t::refstring_t encode_ref(const DataFile::bitstring_t &bits,
-                                              const std::unique_ptr<dicttree_t> &tree)
+                                              const std::unique_ptr<dicttree_t> &tree,
+                                              bool is_glyph)
 {
     encoded_font_t::refstring_t result;
     
     // Strip any zeroes from end
     size_t end = bits.size();
-    while (end > 0 && bits.at(end - 1) != true) end--;
+    
+    if (is_glyph)
+    {
+        while (end > 0 && bits.at(end - 1) != true) end--;
+    }
     
     size_t i = 0;
     while (i < end)
     {
         int index;
-        i += walk_tree(tree, bits.begin() + i, bits.end(), index);
+        i += walk_tree(tree, bits.begin() + i, bits.end(), index, is_glyph);
         result.push_back(index);
     }
     
@@ -129,21 +148,54 @@ static encoded_font_t::refstring_t encode_ref(const DataFile::bitstring_t &bits,
     return result;
 }
 
+// Compare dictionary entries by their coding type.
+// Sorts RLE-encoded entries first and any empty entries last.
+static bool cmp_dict_coding(const DataFile::dictentry_t &a,
+                            const DataFile::dictentry_t &b)
+{
+    if (a.replacement.size() == 0 && b.replacement.size() != 0)
+        return false;
+    else if (a.replacement.size() != 0 && b.replacement.size() == 0)
+        return true;
+    else if (a.ref_encode == false && b.ref_encode == true)
+        return true;
+    else
+        return false;
+}
+
 std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile)
 {
     std::unique_ptr<encoded_font_t> result(new encoded_font_t);
     
-    // First RLE-encode the dictionary
-    for (DataFile::dictentry_t d : datafile.GetDictionary())
+    // Sort the dictionary so that RLE-coded entries come first.
+    // This way the two are easy to distinguish based on index.
+    std::vector<DataFile::dictentry_t> sorted_dict = datafile.GetDictionary();
+    std::stable_sort(sorted_dict.begin(), sorted_dict.end(), cmp_dict_coding);
+    
+    // Build the binary tree for looking up references.
+    dicttree_t::ptr tree = construct_tree(sorted_dict);
+    
+    // Encode the dictionary entries, using either RLE or reference method.
+    for (DataFile::dictentry_t d : sorted_dict)
     {
-        result->dictionary.push_back(encode_rle(d.replacement));
+        if (d.replacement.size() == 0)
+        {
+            continue;
+        }
+        else if (d.ref_encode)
+        {
+            result->ref_dictionary.push_back(encode_ref(d.replacement, tree, false));
+        }
+        else
+        {
+            result->rle_dictionary.push_back(encode_rle(d.replacement));
+        }
     }
     
     // Then reference-encode the glyphs
-    dicttree_t::ptr tree = construct_tree(datafile.GetDictionary());
     for (DataFile::glyphentry_t g : datafile.GetGlyphTable())
     {
-        result->glyphs.push_back(encode_ref(g.data, tree));
+        result->glyphs.push_back(encode_ref(g.data, tree, true));
     }
     
     return result;
@@ -152,7 +204,14 @@ std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile)
 size_t get_encoded_size(const encoded_font_t &encoded)
 {
     size_t total = 0;
-    for (const encoded_font_t::rlestring_t &r : encoded.dictionary)
+    for (const encoded_font_t::rlestring_t &r : encoded.rle_dictionary)
+    {
+        total += r.size();
+        
+        if (r.size() != 0)
+            total += 2; // Offset table entry
+    }
+    for (const encoded_font_t::refstring_t &r : encoded.ref_dictionary)
     {
         total += r.size();
         
@@ -169,12 +228,13 @@ size_t get_encoded_size(const encoded_font_t &encoded)
 }
 
 std::unique_ptr<DataFile::bitstring_t> decode_glyph(
-    const encoded_font_t &encoded, size_t index,
+    const encoded_font_t &encoded,
+    const encoded_font_t::refstring_t &refstring,
     const DataFile::fontinfo_t &fontinfo)
 {
     std::unique_ptr<DataFile::bitstring_t> result(new DataFile::bitstring_t);
     
-    for (uint8_t ref : encoded.glyphs.at(index))
+    for (uint8_t ref : refstring)
     {
         if (ref == 0)
         {
@@ -192,9 +252,9 @@ std::unique_ptr<DataFile::bitstring_t> decode_glyph(
         {
             // Reserved
         }
-        else
+        else if (ref - 4 < (int)encoded.rle_dictionary.size())
         {
-            for (uint8_t rle : encoded.dictionary.at(ref - 4))
+            for (uint8_t rle : encoded.rle_dictionary.at(ref - 4))
             {
                 bool bit = (rle & 0x80);
                 for (int i = 0; i < (rle & 0x7F); i++)
@@ -203,7 +263,22 @@ std::unique_ptr<DataFile::bitstring_t> decode_glyph(
                 }
             }
         }
+        else
+        {
+            size_t index = ref - 4 - encoded.rle_dictionary.size();
+            std::unique_ptr<DataFile::bitstring_t> part =
+                decode_glyph(encoded, encoded.ref_dictionary.at(index),
+                             fontinfo);
+            result->insert(result->end(), part->begin(), part->end());
+        }
     }
     
     return result;
+}
+
+std::unique_ptr<DataFile::bitstring_t> decode_glyph(
+    const encoded_font_t &encoded, size_t index,
+    const DataFile::fontinfo_t &fontinfo)
+{
+    return decode_glyph(encoded, encoded.glyphs.at(index), fontinfo);
 }
