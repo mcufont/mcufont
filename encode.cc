@@ -197,7 +197,8 @@ size_t estimate_tree_node_count(const std::vector<DataFile::dictentry_t> &dict)
     return count;
 }
 
-std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile)
+std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile,
+                                            bool verify)
 {
     std::unique_ptr<encoded_font_t> result(new encoded_font_t);
     
@@ -232,6 +233,18 @@ std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile)
     for (DataFile::glyphentry_t g : datafile.GetGlyphTable())
     {
         result->glyphs.push_back(encode_ref(g.data, tree, true));
+    }
+    
+    // Optionally verify that the encoding was correct.
+    if (verify)
+    {
+        for (size_t i = 0; i < datafile.GetGlyphCount(); i++)
+        {
+            std::unique_ptr<DataFile::bitstring_t> decoded = 
+                decode_glyph(*result, i, datafile.GetFontInfo());
+            if (*decoded != datafile.GetGlyphEntry(i).data)
+                throw std::logic_error("verification of glyph failed");
+        }
     }
     
     return result;

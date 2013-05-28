@@ -2,6 +2,7 @@
 #include "datafile.hh"
 #include "encode.hh"
 #include "optimize.hh"
+#include "c_export.hh"
 #include <vector>
 #include <string>
 #include <fstream>
@@ -27,6 +28,7 @@ static std::string strip_extension(std::string filename)
 static const char *usage_msg =
     "Usage:\n"
     "   import <bdffile>                Import a .bdf font into a data file.\n"
+    "   export <datfile> <basename>     Export to .c and .h source code.\n"
     "   size <datfile>                  Check the encoded size of the data file.\n"
     "   optimize <datfile>              Perform an optimization pass on the data file.\n"
     "   show_encoded <datfile>          Show the encoded data for debugging.\n"
@@ -60,6 +62,34 @@ int main(int argc, char **argv)
         f->Save(outfile);
         
         std::cout << "Done: " << f->GetGlyphCount() << " unique glyphs." << std::endl;
+        return 0;
+    }
+    else if (args.size() == 3 && args.at(0) == "export")
+    {
+        std::string src = args.at(1);
+        std::string dst = args.at(2);
+        std::ifstream infile(src);
+        
+        if (!infile.good())
+        {
+            std::cerr << "Could not open " << src << std::endl;
+            return 1;
+        }
+        
+        std::unique_ptr<DataFile> f = DataFile::Load(infile);
+        
+        {
+            std::ofstream header(dst + ".h");
+            write_header(header, dst, *f);
+            std::cout << "Wrote " << dst << ".h" << std::endl;
+        }
+        
+        {
+            std::ofstream source(dst + ".c");
+            write_source(source, dst, *f);
+            std::cout << "Wrote " << dst << ".c" << std::endl;
+        }
+        
         return 0;
     }
     else if (args.size() == 2 && args.at(0) == "size")

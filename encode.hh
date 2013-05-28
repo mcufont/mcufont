@@ -25,7 +25,8 @@ struct encoded_font_t
 };
 
 // Encode all the glyphs.
-std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile);
+std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile,
+                                            bool verify = false);
 
 // Sum up the total size of the encoded glyphs + dictionary.
 size_t get_encoded_size(const encoded_font_t &encoded);
