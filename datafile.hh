@@ -35,6 +35,7 @@ public:
         int max_height; // Height of the character bounding box.
         int baseline_x; // X coordinate (from left) of the baseline.
         int baseline_y; // Y coordinate (from top) of the baseline.
+        size_t default_glyph; // Index of the glyph for missing characters.
     };
     
     // Construct from data in memory.

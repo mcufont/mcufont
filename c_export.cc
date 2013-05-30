@@ -3,9 +3,11 @@
 #include <iomanip>
 #include <map>
 #include <algorithm>
+#include <string>
 
 // Write a vector of integers as line-wrapped hex/integer data for initializing const array.
-static void wordwrap(std::ostream &out, const std::vector<unsigned> &data, const char *prefix, size_t width = 2)
+static void wordwrap(std::ostream &out, const std::vector<unsigned> &data,
+                     const std::string &prefix, size_t width = 2)
 {
     int values_per_column = (width <= 2) ? 16 : 8;
     
@@ -22,6 +24,17 @@ static void wordwrap(std::ostream &out, const std::vector<unsigned> &data, const
     out.flags(flags);
 }
 
+static void write_table(std::ostream &out, const std::vector<unsigned> &data,
+                        const std::string &datatype, const std::string &tablename,
+                        size_t width = 2)
+{
+    out << "static const " << datatype << " " << tablename;
+    out << "[" << data.size() << "] = {" << std::endl;
+    wordwrap(out, data, "    ", width);
+    out << std::endl << "};" << std::endl;
+    out << std::endl;
+}
+
 struct char_range_t
 {
     uint16_t first_char;
@@ -33,7 +46,8 @@ struct char_range_t
 
 // Find out all the characters present in the font and decide how to best
 // to divide them into ranges.
-std::vector<char_range_t> compute_char_ranges(const DataFile &datafile)
+std::vector<char_range_t> compute_char_ranges(const DataFile &datafile,
+                                              const encoded_font_t &encoded)
 {
     std::vector<char_range_t> result;
     std::map<size_t, size_t> char_to_glyph;
@@ -63,22 +77,30 @@ std::vector<char_range_t> compute_char_ranges(const DataFile &datafile)
         while (i < chars.size() && chars.at(i) - chars.at(i - 1) < 8)
             i++;
         
-        range.char_count = chars.at(i - 1) + 1 - range.first_char;
+        uint16_t last_char = chars.at(i - 1);
         
         // Then store the indices of glyphs for each character
-        for (size_t j = range.first_char;
-             j < range.first_char + range.char_count; j++)
+        size_t data_length = 0;
+        for (size_t j = range.first_char; j <= last_char; j++)
         {
+            size_t glyph_index;
             if (char_to_glyph.count(j) == 0)
-            {
-                // FIXME: This should use the default character.
-                range.glyph_indices.push_back(0);
-            }
+                glyph_index = datafile.GetFontInfo().default_glyph;
             else
+                glyph_index = char_to_glyph[j];
+            
+            // We can encode at most 64 kB in a single character range.
+            data_length += encoded.glyphs[glyph_index].size() + 1;
+            if (data_length > 65535)
             {
-                range.glyph_indices.push_back(char_to_glyph[j]);
+                last_char = j - 1;
+                break;
             }
+            
+            range.glyph_indices.push_back(glyph_index);
         }
+        
+        range.char_count = last_char - range.first_char + 1;
         result.push_back(range);
     }
     
@@ -98,91 +120,100 @@ void write_header(std::ostream &out, std::string name, const DataFile &datafile)
     out << "#endif" << std::endl;
 }
 
+// Encode the dictionary entries and the offsets to them.
+// Generates tables dictionary_data and dictionary_offsets.
+static void encode_dictionary(std::ostream &out, const DataFile &datafile,
+                              const encoded_font_t &encoded)
+{
+    std::vector<unsigned> offsets;
+    std::vector<unsigned> data;
+    for (const encoded_font_t::rlestring_t &r : encoded.rle_dictionary)
+    {
+        offsets.push_back(data.size());
+        data.insert(data.end(), r.begin(), r.end());
+    }
+    
+    for (const encoded_font_t::refstring_t &r : encoded.ref_dictionary)
+    {
+        offsets.push_back(data.size());
+        data.insert(data.end(), r.begin(), r.end());
+    }
+    
+    write_table(out, data, "uint8_t", "dictionary_data");
+    write_table(out, offsets, "uint16_t", "dictionary_offsets", 4);
+}
+
+// Encode the data tables for a single character range.
+// Generates tables glyph_data_i and glyph_offsets_i.
+static void encode_character_range(std::ostream &out, const DataFile &datafile,
+                              const encoded_font_t& encoded,
+                              const char_range_t& range,
+                              unsigned range_index)
+{
+    std::vector<unsigned> offsets;
+    std::vector<unsigned> data;
+    std::map<size_t, unsigned> already_encoded;
+    
+    for (size_t glyph_index : range.glyph_indices)
+    {
+        if (already_encoded.count(glyph_index))
+        {
+            offsets.push_back(already_encoded[glyph_index]);
+        }
+        else
+        {
+            const encoded_font_t::refstring_t &r = encoded.glyphs[glyph_index];
+            
+            offsets.push_back(data.size());
+            already_encoded[glyph_index] = data.size();
+            
+            data.push_back(datafile.GetGlyphEntry(glyph_index).width);
+            data.insert(data.end(), r.begin(), r.end());
+        }
+    }
+    
+    write_table(out, data, "uint8_t", "glyph_data_" + std::to_string(range_index));
+    write_table(out, offsets, "uint16_t", "glyph_offsets_" + std::to_string(range_index), 4);
+}
+
 void write_source(std::ostream &out, std::string name, const DataFile &datafile)
 {
     std::unique_ptr<encoded_font_t> encoded = encode_font(datafile, true);
-    std::vector<unsigned> dictionary_offsets;
-    std::vector<unsigned> glyph_offsets;
-    std::vector<char_range_t> char_ranges;
     
     out << "/* Automatically generated font definition. */" << std::endl;
     out << "#include \"" << name << ".h\"" << std::endl;
     out << std::endl;
     
-    // 1. Encode the dictionary
-    out << "static const uint8_t dictionary_data[] = {" << std::endl;
-    std::vector<unsigned> data;
-    for (const encoded_font_t::rlestring_t &r : encoded->rle_dictionary)
+    // Write out the dictionary entries
+    encode_dictionary(out, datafile, *encoded);
+    
+    // Write out glyph data for character ranges
+    std::vector<char_range_t> ranges = compute_char_ranges(datafile, *encoded);
+    for (size_t i = 0; i < ranges.size(); i++)
     {
-        dictionary_offsets.push_back(data.size());
-        data.insert(data.end(), r.begin(), r.end());
+        encode_character_range(out, datafile, *encoded, ranges.at(i), i);
     }
     
-    for (const encoded_font_t::refstring_t &r : encoded->ref_dictionary)
-    {
-        dictionary_offsets.push_back(data.size());
-        data.insert(data.end(), r.begin(), r.end());
-    }
-    wordwrap(out, data, "    ");
-    out << std::endl << "};" << std::endl;
-    out << std::endl;
-    out << "static const uint16_t dictionary_offsets[] = {" << std::endl;
-    wordwrap(out, dictionary_offsets, "    ", 4);
-    out << std::endl << "};" << std::endl;
-    out << std::endl;
-    
-    // 2. Encode the glyphs
-    out << "static const uint8_t glyph_data[] = {" << std::endl;
-    data.clear();
-    size_t i = 0;
-    for (const encoded_font_t::refstring_t &r : encoded->glyphs)
-    {
-        glyph_offsets.push_back(data.size());
-        
-        // Encode the width of the glyph followed by the data.
-        data.push_back(datafile.GetGlyphEntry(i).width);
-        data.insert(data.end(), r.begin(), r.end());
-        i++;
-    }
-    wordwrap(out, data, "    ");
-    out << std::endl << "};" << std::endl;
-    out << std::endl;
-    
-    // 3. Encode the character ranges
-    std::vector<char_range_t> ranges = compute_char_ranges(datafile);
-    i = 0;
-    for (const char_range_t &range: ranges)
-    {
-        data.clear();
-        out << "static const uint16_t glyph_offsets_" << i++ << "[] = {" << std::endl;
-        for (size_t glyph_index : range.glyph_indices)
-        {
-            data.push_back(glyph_offsets.at(glyph_index));
-        }
-        wordwrap(out, data, "    ", 4);
-        out << std::endl << "};" << std::endl;
-        out << std::endl;
-    }
+    // Write out a table describing the character ranges
     out << "static const struct char_range_s char_ranges[] = {" << std::endl;
-    i = 0;
-    for (const char_range_t &range: ranges)
+    for (size_t i = 0; i < ranges.size(); i++)
     {
-        out << "    {" << range.first_char
-            << ", " << range.char_count
-            << ", glyph_offsets_" << i++ << "}," << std::endl; 
+        out << "    {" << ranges.at(i).first_char
+            << ", " << ranges.at(i).char_count
+            << ", glyph_offsets_" << i
+            << ", glyph_data_" << i << "}," << std::endl; 
     }
     out << "};" << std::endl;
     out << std::endl;
     
-    // 4. Pull it all together in the rlefont_s structure.
+    // Pull it all together in the rlefont_s structure.
     out << "const struct rlefont_s rlefont_" << name << " = {" << std::endl;
     out << "    " << "\"" << datafile.GetFontInfo().name << "\"," << std::endl;
     out << "    " << "dictionary_data," << std::endl;
     out << "    " << "dictionary_offsets," << std::endl;
     out << "    " << encoded->rle_dictionary.size() << ", /* rle dict count */" << std::endl;
     out << "    " << encoded->ref_dictionary.size() + encoded->rle_dictionary.size() << ", /* total dict count */" << std::endl;
-    out << "    " << "glyph_data," << std::endl;
-    out << "    " << glyph_offsets.at(0) << ", /* default glyph */" << std::endl; // FIXME: Should use the real default glyph from BDF
+    out << "    " << "&glyph_data_0[0], /* default glyph */" << std::endl; // FIXME: Should use the real default glyph from BDF
     out << "    " << ranges.size() << ", /* char range count */" << std::endl;
     out << "    " << "char_ranges," << std::endl;
     out << "    " << datafile.GetFontInfo().max_width << ", /* width */" << std::endl;

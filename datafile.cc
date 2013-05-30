@@ -47,7 +47,7 @@ void DataFile::Save(std::ostream &file) const
 
 std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
 {
-    fontinfo_t fontinfo;
+    fontinfo_t fontinfo = {};
     std::vector<dictentry_t> dictionary;
     std::vector<glyphentry_t> glyphtable;
     uint32_t seed = 1234;
