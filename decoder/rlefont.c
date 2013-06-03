@@ -30,11 +30,11 @@ static const uint8_t *find_glyph(const struct rlefont_s *font,
  * and also the bounds of the character. */
 struct renderstate_r
 {
-    font_pos_t x_begin;
-    font_pos_t x_end;
-    font_pos_t x;
-    font_pos_t y;
-    font_pos_t y_end;
+    int16_t x_begin;
+    int16_t x_end;
+    int16_t x;
+    int16_t y;
+    int16_t y_end;
     pixel_callback_t callback;
     void *state;
 };
@@ -149,11 +149,11 @@ static void write_glyph_codeword(const struct rlefont_s *font,
 }
 
 
-font_pos_t render_character(const struct rlefont_s *font,
-                            font_pos_t x0, font_pos_t y0,
-                            uint16_t character,
-                            pixel_callback_t callback,
-                            void *state)
+uint8_t render_character(const struct rlefont_s *font,
+                         int16_t x0, int16_t y0,
+                         uint16_t character,
+                         pixel_callback_t callback,
+                         void *state)
 {
     const uint8_t *p;
     uint8_t width;
@@ -177,7 +177,7 @@ font_pos_t render_character(const struct rlefont_s *font,
     return width;
 }
 
-font_pos_t character_width(const struct rlefont_s *font,
+uint8_t character_width(const struct rlefont_s *font,
                            uint16_t character)
 {
     return *find_glyph(font, character);

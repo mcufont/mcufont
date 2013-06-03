@@ -15,9 +15,6 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 
-/* Type to use for coordinates within character. */
-typedef uint16_t font_pos_t;
-
 /* Structure for a range of characters. This implements a sparse storage of
  * character indices, so that you can e.g. pick a 100 characters in the middle
  * of the UTF16 range and just store them. */
@@ -71,12 +68,12 @@ struct rlefont_s
     const struct char_range_s *char_ranges;
     
     /* Width and height of the character bounding box. */
-    font_pos_t width;
-    font_pos_t height;
+    uint8_t width;
+    uint8_t height;
     
     /* Location of the text baseline relative to character. */
-    font_pos_t baseline_x;
-    font_pos_t baseline_y;
+    uint8_t baseline_x;
+    uint8_t baseline_y;
 };
 
 /* Lookup structure for searching fonts by name. */
@@ -87,7 +84,7 @@ struct rlefont_list_s
 };
 
 /* Callback function that writes pixels to screen / buffer / whatever. */
-typedef void (*pixel_callback_t) (font_pos_t x, font_pos_t y,
+typedef void (*pixel_callback_t) (int16_t x, int16_t y,
                                   uint8_t alpha, void *state);
 
 /* Function to decode and render a single character. 
@@ -100,11 +97,11 @@ typedef void (*pixel_callback_t) (font_pos_t x, font_pos_t y,
  * 
  * Returns width of the character.
  */
-font_pos_t render_character(const struct rlefont_s *font,
-                            font_pos_t x0, font_pos_t y0,
-                            uint16_t character,
-                            pixel_callback_t callback,
-                            void *state);
+uint8_t render_character(const struct rlefont_s *font,
+                         int16_t x0, int16_t y0,
+                         uint16_t character,
+                         pixel_callback_t callback,
+                         void *state);
 
 /* Function to get the width of a single character.
  * This is not necessarily the bounding box of the character
@@ -115,8 +112,8 @@ font_pos_t render_character(const struct rlefont_s *font,
  * 
  * Returns width of the character.
  */
-font_pos_t character_width(const struct rlefont_s *font,
-                           uint16_t character);
+uint8_t character_width(const struct rlefont_s *font,
+                        uint16_t character);
 
 /* Find a font based on name. The name can be either short name or full name.
  * Note: You can pass INCLUDED_FONTS to search among all the included .h files.

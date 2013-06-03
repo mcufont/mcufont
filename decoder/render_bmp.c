@@ -71,7 +71,7 @@ typedef struct {
 } state_t;
 
 /* Callback to write to a memory buffer. */
-void pixel_callback(font_pos_t x, font_pos_t y, uint8_t alpha, void *state)
+void pixel_callback(int16_t x, int16_t y, uint8_t alpha, void *state)
 {
     state_t *s = (state_t*)state;
     uint16_t val;
