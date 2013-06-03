@@ -181,6 +181,7 @@ static void encode_dictionary(std::ostream &out, const DataFile &datafile,
         offsets.push_back(data.size());
         data.insert(data.end(), r.begin(), r.end());
     }
+    offsets.push_back(data.size());
     
     write_table(out, data, "uint8_t", "dictionary_data");
     write_table(out, offsets, "uint16_t", "dictionary_offsets", 4);
