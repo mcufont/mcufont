@@ -97,10 +97,12 @@ std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
             std::string chars;
             input >> chars >> g.width >> g.data;
             
-            std::istringstream charstream(chars);
-            int c;
-            while (charstream >> c)
-                g.chars.push_back(c);
+            size_t pos = 0;
+            while (pos < chars.size()) {
+                size_t p;
+                g.chars.push_back(std::stoi(chars.substr(pos), &p));
+                pos += p + 1;
+            }
             
             glyphtable.push_back(g);
         }
