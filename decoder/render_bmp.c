@@ -1,10 +1,8 @@
 /* Example application that renders the given (UTF-8 or ASCII) string into
  * a BMP image. */
 
-#define FONT_STRUCT rlefont_fixed_7x14
-
 #include "rlefont.h"
-#include "fixed_7x14.h"
+#include "fonts.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -72,10 +70,14 @@ typedef struct {
     uint16_t height;
 } state_t;
 
+/* Callback to write to a memory buffer. */
 void pixel_callback(font_pos_t x, font_pos_t y, uint8_t alpha, void *state)
 {
     state_t *s = (state_t*)state;
     uint16_t val;
+    
+    if (x < 0 || x >= s->width) return;
+    if (y < 0 || y >= s->height) return;
     
     val = s->buffer[s->width * y + x] + alpha;
     if (val > 255) val = 255;
@@ -87,25 +89,34 @@ int main(int argc, char **argv)
     const char *filename, *string;
     int width = 0, height = 0, x;
     const char *p;
+    const struct rlefont_s *font;
     
-    if (argc != 3)
+    if (argc != 4)
     {
-        printf("Usage: ./render_bmp file.bmp string\n");
+        printf("Usage: ./render_bmp font file.bmp string\n");
         return 1;
     }
     
-    filename = argv[1];
-    string = argv[2];
+    font = find_font(argv[1], INCLUDED_FONTS);
+    
+    if (!font)
+    {
+        printf("No such font: %s\n", argv[1]);
+        return 2;
+    }
+    
+    filename = argv[2];
+    string = argv[3];
     
     /* Figure out the width of the string */
     p = string;
     while (*p)
     {
-        width += character_width(&FONT_STRUCT, *p++);
+        width += character_width(font, *p++);
     }
     
     while (width % 4 != 0) width++;
-    height = FONT_STRUCT.height;
+    height = font->height;
     
     printf("Bitmap size: %d x %d\n", width, height);
     
@@ -117,10 +128,10 @@ int main(int argc, char **argv)
     
     /* Render the text */
     p = string;
-    x = 0;
+    x = - font->baseline_x;
     while (*p)
     {
-        x += render_character(&FONT_STRUCT, x, 0, *p++, pixel_callback, &state);
+        x += render_character(font, x, 0, *p++, pixel_callback, &state);
     }
     
     /* Write out the bitmap */

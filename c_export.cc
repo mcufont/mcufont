@@ -4,6 +4,30 @@
 #include <map>
 #include <algorithm>
 #include <string>
+#include <cctype>
+
+// Convert a file name to a valid C identifier
+static std::string to_identifier(std::string name)
+{
+    // If the name contains path separators (/ or \), take only the last part.
+    size_t pos = name.find_last_of("/\\");
+    if (pos != std::string::npos)
+        name = name.substr(pos + 1);
+    
+    // If the name contains a file extension, strip it.
+    pos = name.find_first_of(".");
+    if (pos != std::string::npos)
+        name = name.substr(0, pos);
+    
+    // Replace any special characters with _.
+    for (pos = 0; pos < name.size(); pos++)
+    {
+        if (!isalnum(name.at(pos)))
+            name.at(pos) = '_';
+    }
+    
+    return name;
+}
 
 // Write a vector of integers as line-wrapped hex/integer data for initializing const array.
 static void wordwrap(std::ostream &out, const std::vector<unsigned> &data,
@@ -24,6 +48,7 @@ static void wordwrap(std::ostream &out, const std::vector<unsigned> &data,
     out.flags(flags);
 }
 
+// Write a vector of integers as a C constant array of given datatype.
 static void write_table(std::ostream &out, const std::vector<unsigned> &data,
                         const std::string &datatype, const std::string &tablename,
                         size_t width = 2)
@@ -35,6 +60,7 @@ static void write_table(std::ostream &out, const std::vector<unsigned> &data,
     out << std::endl;
 }
 
+// Structure to represent one consecutive range of characters.
 struct char_range_t
 {
     uint16_t first_char;
@@ -109,13 +135,30 @@ std::vector<char_range_t> compute_char_ranges(const DataFile &datafile,
 
 void write_header(std::ostream &out, std::string name, const DataFile &datafile)
 {
-    out << "/* Automatically generated font definition. */" << std::endl;
+    name = to_identifier(name);
+    
+    out << std::endl;
+    out << "/* Automatically generated font definition for font '" << name << "'. */" << std::endl;
     out << "#ifndef _" << name << "_H_" << std::endl;
     out << "#define _" << name << "_H_" << std::endl;
     out << std::endl;
     out << "#include \"rlefont.h\"" << std::endl;
     out << std::endl;
+    out << "/* The font definition */" << std::endl;
     out << "extern const struct rlefont_s rlefont_" << name << ";" << std::endl;
+    out << std::endl;
+    out << "/* List entry for searching fonts by name. */" << std::endl;
+    out << "static const struct rlefont_list_s rlefont_" << name << "_listentry = {" << std::endl;
+    out << "#   ifndef INCLUDED_FONTS" << std::endl;
+    out << "    0," << std::endl;
+    out << "#   else" << std::endl;
+    out << "    INCLUDED_FONTS," << std::endl;
+    out << "#   undef INCLUDED_FONTS" << std::endl;
+    out << "#   endif" << std::endl;
+    out << "    &rlefont_" << name << std::endl;
+    out << "};" << std::endl;
+    out << "#define INCLUDED_FONTS (&rlefont_" << name << "_listentry)" << std::endl;
+    
     out << std::endl;
     out << "#endif" << std::endl;
 }
@@ -178,6 +221,7 @@ static void encode_character_range(std::ostream &out, const DataFile &datafile,
 
 void write_source(std::ostream &out, std::string name, const DataFile &datafile)
 {
+    name = to_identifier(name);
     std::unique_ptr<encoded_font_t> encoded = encode_font(datafile, true);
     
     out << "/* Automatically generated font definition. */" << std::endl;
@@ -209,6 +253,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     // Pull it all together in the rlefont_s structure.
     out << "const struct rlefont_s rlefont_" << name << " = {" << std::endl;
     out << "    " << "\"" << datafile.GetFontInfo().name << "\"," << std::endl;
+    out << "    " << "\"" << name << "\"," << std::endl;
     out << "    " << "dictionary_data," << std::endl;
     out << "    " << "dictionary_offsets," << std::endl;
     out << "    " << encoded->rle_dictionary.size() << ", /* rle dict count */" << std::endl;

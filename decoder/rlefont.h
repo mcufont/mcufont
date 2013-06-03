@@ -39,8 +39,11 @@ struct char_range_s
 /* Structure for a single encoded font. */
 struct rlefont_s
 {
-    /* Human readable name of the font. */
-    const char *font_name;
+    /* Full name of the font, comes from the original font file. */
+    const char *full_name;
+    
+    /* Short name of the font, comes from file name. */
+    const char *short_name;
     
     /* Big array of the data for all the dictionary entries. */
     const uint8_t *dictionary_data;
@@ -76,6 +79,13 @@ struct rlefont_s
     font_pos_t baseline_y;
 };
 
+/* Lookup structure for searching fonts by name. */
+struct rlefont_list_s
+{
+    const struct rlefont_list_s *next;
+    const struct rlefont_s *font;
+};
+
 /* Callback function that writes pixels to screen / buffer / whatever. */
 typedef void (*pixel_callback_t) (font_pos_t x, font_pos_t y,
                                   uint8_t alpha, void *state);
@@ -107,6 +117,17 @@ font_pos_t render_character(const struct rlefont_s *font,
  */
 font_pos_t character_width(const struct rlefont_s *font,
                            uint16_t character);
+
+/* Find a font based on name. The name can be either short name or full name.
+ * Note: You can pass INCLUDED_FONTS to search among all the included .h files.
+ *
+ * name: Font name to search for.
+ * fonts: Pointer to the first font search entry.
+ *
+ * Returns a pointer to the font or NULL if not found.
+ */
+const struct rlefont_s *find_font(const char *name,
+                                  const struct rlefont_list_s *fonts);
 
 #ifdef __cplusplus
 }

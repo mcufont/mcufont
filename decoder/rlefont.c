@@ -182,3 +182,35 @@ font_pos_t character_width(const struct rlefont_s *font,
 {
     return *find_glyph(font, character);
 }
+
+/* Avoids a dependency on libc */
+static uint8_t strequals(const char *a, const char *b)
+{
+    while (*a)
+    {
+        if (*a++ != *b++)
+            return 0;
+    }
+    return 1;
+}
+
+const struct rlefont_s *find_font(const char *name,
+                                  const struct rlefont_list_s *fonts)
+{
+    const struct rlefont_list_s *f;
+    f = fonts;
+    
+    while (f)
+    {
+        if (strequals(f->font->full_name, name) ||
+            strequals(f->font->short_name, name))
+        {
+            return f->font;
+        }
+        
+        f = f->next;
+    }
+    
+    return 0;
+}
+
