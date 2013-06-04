@@ -103,7 +103,7 @@ static void write_ref_codeword(const struct rlefont_s *font,
     else if (code == 2)
     {
         uint16_t remaining;
-        remaining = (rstate->y - rstate->y_end) * font->width
+        remaining = (rstate->y_end - rstate->y) * font->width
                     - (rstate->x - rstate->x_begin);
         write_pixels(rstate, remaining, 0);
     }

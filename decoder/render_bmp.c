@@ -4,6 +4,7 @@
 #include "rlefont.h"
 #include "fonts.h"
 #include "mini_utf8.h"
+#include "autokerning.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -95,6 +96,7 @@ int main(int argc, char **argv)
     const char *filename, *string;
     int width = 0, height = 0, x;
     const char *p;
+    uint16_t c1, c2;
     const struct rlefont_s *font;
     
     if (argc != 4)
@@ -135,9 +137,14 @@ int main(int argc, char **argv)
     /* Render the text */
     p = string;
     x = - font->baseline_x;
+    c1 = 0;
     while (*p)
     {
-        x += render_character(font, x, 0, utf8_getchar(&p), pixel_callback, &state);
+        c2 = utf8_getchar(&p);
+        if (c1 != 0)
+            x += compute_kerning(font, c1, c2);
+        x += render_character(font, x, 0, c2, pixel_callback, &state);
+        c1 = c2;
     }
     
     /* Write out the bitmap */
