@@ -3,6 +3,7 @@
 
 #include "rlefont.h"
 #include "fonts.h"
+#include "mini_utf8.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -112,7 +113,7 @@ int main(int argc, char **argv)
     p = string;
     while (*p)
     {
-        width += character_width(font, *p++);
+        width += character_width(font, utf8_getchar(&p));
     }
     
     while (width % 4 != 0) width++;
@@ -131,7 +132,7 @@ int main(int argc, char **argv)
     x = - font->baseline_x;
     while (*p)
     {
-        x += render_character(font, x, 0, *p++, pixel_callback, &state);
+        x += render_character(font, x, 0, utf8_getchar(&p), pixel_callback, &state);
     }
     
     /* Write out the bitmap */

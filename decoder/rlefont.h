@@ -105,7 +105,7 @@ uint8_t render_character(const struct rlefont_s *font,
 
 /* Function to get the width of a single character.
  * This is not necessarily the bounding box of the character
- * data, but rather the kerning width.
+ * data, but rather the tracking width.
  *
  * font:      Pointer to the font definition.
  * character: The character code (UTF-16) to render.

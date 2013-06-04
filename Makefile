@@ -1,4 +1,4 @@
-CXXFLAGS = -O0 -Wall -Werror -Wno-unused-function -std=c++11
+CXXFLAGS = -O2 -Wall -Werror -Wno-unused-function -std=c++11
 CXXFLAGS += -ggdb
 
 OBJS = bdffont.o datafile.o encode.o optimize.o c_export.o
