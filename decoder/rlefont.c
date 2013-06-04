@@ -41,26 +41,25 @@ struct renderstate_r
 
 /* Call the callback to write one pixel to screen, and advance to next
  * pixel position. */
-static void write_pixel(struct renderstate_r *rstate, uint8_t alpha)
+static void write_pixels(struct renderstate_r *rstate, uint16_t count, uint8_t alpha)
 {
-    rstate->callback(rstate->x, rstate->y, alpha, rstate->state);
+    uint8_t rowlen;
     
-    rstate->x++;
-    if (rstate->x == rstate->x_end)
+    /* Write row-by-row if the run spans multiple rows. */
+    while (rstate->x + count >= rstate->x_end)
     {
+        rowlen = rstate->x_end - rstate->x;
+        rstate->callback(rstate->x, rstate->y, rowlen, alpha, rstate->state);
+        count -= rowlen;
         rstate->x = rstate->x_begin;
         rstate->y++;
     }
-}
-
-/* Skip the given number of pixels (0 alpha) */
-static void skip_pixels(struct renderstate_r *rstate, uint8_t count)
-{
-    rstate->x += count;
-    while (rstate->x >= rstate->x_end)
+    
+    /* Write the remaining part */
+    if (count)
     {
-        rstate->x -= rstate->x_end - rstate->x_begin;
-        rstate->y++;
+        rstate->callback(rstate->x, rstate->y, count, alpha, rstate->state);
+        rstate->x += count;
     }
 }
 
@@ -72,7 +71,6 @@ static void write_rle_dictentry(const struct rlefont_s *font,
     uint16_t offset = font->dictionary_offsets[index];
     uint16_t length = font->dictionary_offsets[index + 1] - offset;
     uint16_t i;
-    uint8_t j;
     
     for (i = 0; i < length; i++)
     {
@@ -80,12 +78,11 @@ static void write_rle_dictentry(const struct rlefont_s *font,
         if (code & 0x80)
         {
             code &= 0x7F;
-            for (j = 0; j < code; j++)
-                write_pixel(rstate, 255);
+            write_pixels(rstate, code, 255);
         }
         else
         {
-            skip_pixels(rstate, code);
+            write_pixels(rstate, code, 0);
         }
     }
 }
@@ -97,15 +94,18 @@ static void write_ref_codeword(const struct rlefont_s *font,
 {
     if (code == 0)
     {
-        write_pixel(rstate, 0);
+        write_pixels(rstate, 1, 0);
     }
     else if (code == 1)
     {
-        write_pixel(rstate, 255);
+        write_pixels(rstate, 1, 255);
     }
     else if (code == 2)
     {
-        rstate->y = rstate->y_end; /* End of glyph */
+        uint16_t remaining;
+        remaining = (rstate->y - rstate->y_end) * font->width
+                    - (rstate->x - rstate->x_begin);
+        write_pixels(rstate, remaining, 0);
     }
     else if (code < DICT_START)
     {

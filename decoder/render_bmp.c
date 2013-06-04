@@ -72,17 +72,22 @@ typedef struct {
 } state_t;
 
 /* Callback to write to a memory buffer. */
-void pixel_callback(int16_t x, int16_t y, uint8_t alpha, void *state)
+void pixel_callback(int16_t x, int16_t y, uint8_t count, uint8_t alpha, void *state)
 {
     state_t *s = (state_t*)state;
     uint16_t val;
-    
-    if (x < 0 || x >= s->width) return;
     if (y < 0 || y >= s->height) return;
     
-    val = s->buffer[s->width * y + x] + alpha;
-    if (val > 255) val = 255;
-    s->buffer[s->width * y + x] = val;
+    while (count--)
+    {
+        if (x < 0 || x >= s->width) return;
+    
+        val = s->buffer[s->width * y + x] + alpha;
+        if (val > 255) val = 255;
+        s->buffer[s->width * y + x] = val;
+        
+        x++;
+    }
 }
 
 int main(int argc, char **argv)

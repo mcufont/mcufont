@@ -83,8 +83,15 @@ struct rlefont_list_s
     const struct rlefont_s *font;
 };
 
-/* Callback function that writes pixels to screen / buffer / whatever. */
-typedef void (*pixel_callback_t) (int16_t x, int16_t y,
+/* Callback function that writes pixels to screen / buffer / whatever.
+ *
+ * x:     X coordinate of the first pixel to write.
+ * y:     Y coordinate of the first pixel to write.
+ * count: Number of pixels to fill (horizontally).
+ * alpha: The "opaqueness" of the pixels, 0 for background, 255 for text.
+ * state: Free variable that was passed to render_character().
+ */
+typedef void (*pixel_callback_t) (int16_t x, int16_t y, uint8_t count,
                                   uint8_t alpha, void *state);
 
 /* Function to decode and render a single character. 
