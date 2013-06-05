@@ -155,16 +155,16 @@ void DataFile::UpdateLowScoreIndex()
     m_lowscoreindex = iter - m_dictionary.begin();
 }
 
-std::ostream& operator<<(std::ostream& os, const DataFile::bitstring_t& str)
+std::ostream& operator<<(std::ostream& os, const DataFile::pixels_t& str)
 {
-    for (bool b: str)
+    for (uint8_t p: str)
     {
-        os << (b ? '1' : '0');
+        os << (p ? '1' : '0');
     }
     return os;
 }
 
-std::istream& operator>>(std::istream& is, DataFile::bitstring_t& str)
+std::istream& operator>>(std::istream& is, DataFile::pixels_t& str)
 {
     char c;
     str.clear();
@@ -174,9 +174,9 @@ std::istream& operator>>(std::istream& is, DataFile::bitstring_t& str)
     while (is.get(c))
     {
         if (c == '0')
-            str.push_back(false);
+            str.push_back(0);
         else if (c == '1')
-            str.push_back(true);
+            str.push_back(15);
         else
             break;
     }

@@ -16,13 +16,13 @@
 #define RLE_ONES        0x80 // 1 to 64 full alphas
 #define RLE_SHADE       0xC0 // 1 to 4 partial alphas
 
-// Count the number of equal bits at the beginning of the bitstring.
-static size_t prefix_length(const DataFile::bitstring_t &bits, size_t pos)
+// Count the number of equal pixels at the beginning of the pixelstring.
+static size_t prefix_length(const DataFile::pixels_t &pixels, size_t pos)
 {
-    bool bit = bits.at(pos);
+    uint8_t pixel = pixels.at(pos);
     size_t count = 1;
-    while (pos + count < bits.size() &&
-            bits.at(pos + count) == bit)
+    while (pos + count < pixels.size() &&
+            pixels.at(pos + count) == pixel)
     {
         count++;
     }
@@ -30,18 +30,18 @@ static size_t prefix_length(const DataFile::bitstring_t &bits, size_t pos)
 }
 
 // Perform the RLE encoding for a dictionary entry.
-static encoded_font_t::rlestring_t encode_rle(const DataFile::bitstring_t &bits)
+static encoded_font_t::rlestring_t encode_rle(const DataFile::pixels_t &pixels)
 {
     encoded_font_t::rlestring_t result;
     
     size_t pos = 0;
-    while (pos < bits.size())
+    while (pos < pixels.size())
     {
-        bool bit = bits.at(pos);
-        size_t count = prefix_length(bits, pos);
+        uint8_t pixel = pixels.at(pos);
+        size_t count = prefix_length(pixels, pos);
         pos += count;
         
-        if (bit == false)
+        if (pixel == 0)
         {
             // Up to 63 zeros can be encoded with RLE_ZEROS. If there are more,
             // encode using RLE_64ZEROS, and then whatever remains with RLE_ZEROS.
@@ -57,13 +57,23 @@ static encoded_font_t::rlestring_t encode_rle(const DataFile::bitstring_t &bits)
                 result.push_back(RLE_ZEROS | count);
             }
         }
-        else
+        else if (pixel == 15)
         {
             // Encode ones.
             while (count)
             {
                 size_t c = (count > 64) ? 64 : count;
                 result.push_back(RLE_ONES | (c - 1));
+                count -= c;
+            }
+        }
+        else
+        {
+            // Encode shades.
+            while (count)
+            {
+                size_t c = (count > 4) ? 4 : count;
+                result.push_back(RLE_SHADE | ((c - 1) << 4) | pixel);
                 count -= c;
             }
         }
@@ -75,17 +85,62 @@ static encoded_font_t::rlestring_t encode_rle(const DataFile::bitstring_t &bits)
 // We use a tree structure to represent the dictionary entries.
 // Using this tree, we can perform a greedy search for the matching entries.
 // The resulting encoding may not be 100% optimal, but the algorithm is fast.
-struct dicttree_t
+class DictTreeNode
 {
-    int index; // Index of dictionary entry or -1 if just a intermediate node.
-    dicttree_t *zero;
-    dicttree_t *one;
+public:
+    constexpr DictTreeNode():
+        m_index(-1),
+        m_ref(false),
+        m_child0(nullptr),
+        m_child15(nullptr)
+        {}
     
-    bool ref; // True for ref-encoded dictionary entries.
+    DictTreeNode* &Walk(uint8_t p)
+    {
+        if (p == 0)
+            return m_child0;
+        else if (p == 15)
+            return m_child15;
+        else if (p > 15)
+            throw std::logic_error("invalid pixel alpha: " + std::to_string(p));
+        else
+        {
+            if (!m_children)
+            {
+                m_children.reset(new DictTreeNode*[14]());
+            }
+            return m_children[p - 1];
+        }
+    }
     
-    constexpr dicttree_t(): index(-1), zero(nullptr), one(nullptr), ref(false) {}
-    dicttree_t* &walk(bool b) { return b ? one : zero; }
-    const dicttree_t* walk(bool b) const { return b ? one : zero; }
+    const DictTreeNode* Walk(uint8_t p) const
+    { 
+        if (p == 0)
+            return m_child0;
+        else if (p == 15)
+            return m_child15;
+        else if (p > 15)
+            throw std::logic_error("invalid pixel alpha: " + std::to_string(p));
+        else if (!m_children)
+            return nullptr;
+        else
+            return m_children[p - 1];
+    }
+    
+    int GetIndex() const { return m_index; }
+    void SetIndex(int index) { m_index = index; }
+    bool GetRef() const { return m_ref; }
+    void SetRef(bool ref) { m_ref = ref; }
+    
+private:
+    int m_index; // Index of dictionary entry or -1 if just a intermediate node.
+    bool m_ref; // True for ref-encoded dictionary entries.
+    
+    // Most tree nodes will only ever contains children for 0 or 15.
+    // Therefore the array for other nodes is allocated only on demand.
+    DictTreeNode *m_child0;
+    DictTreeNode *m_child15;
+    std::unique_ptr<DictTreeNode*[]> m_children;
 };
 
 // Preallocated array for tree nodes
@@ -94,55 +149,56 @@ class TreeAllocator
 public:
     TreeAllocator(size_t count)
     {
-        m_storage.reset(new dicttree_t[count]);
+        m_storage.reset(new DictTreeNode[count]);
         m_next = m_storage.get();
         m_left = count;
     }
     
-    dicttree_t *allocate()
+    DictTreeNode *allocate()
     {
         if (m_left == 0)
             throw std::logic_error("Ran out of preallocated entries");
         
         m_left--;
-        return new (m_next++) dicttree_t;
+        return m_next++;
     }
     
 private:
-    std::unique_ptr<dicttree_t[]> m_storage;
-    dicttree_t *m_next;
+    std::unique_ptr<DictTreeNode[]> m_storage;
+    DictTreeNode *m_next;
     size_t m_left;
 };
 
 // Construct a lookup tree from the dictionary entries.
-static dicttree_t* construct_tree(const std::vector<DataFile::dictentry_t> &dictionary, TreeAllocator &storage)
+static DictTreeNode* construct_tree(const std::vector<DataFile::dictentry_t> &dictionary, TreeAllocator &storage)
 {
-    dicttree_t* root = storage.allocate();
+    DictTreeNode* root = storage.allocate();
     
-    // Populate the hardcoded entries for 0 and 255 alpha.
-    root->zero = storage.allocate();
-    root->zero->index = 0;
-    root->one = storage.allocate();
-    root->one->index = 15;
+    // Populate the hardcoded entries for 0 to 15 alpha.
+    for (int j = 0; j < 16; j++)
+    {
+        root->Walk(j) = storage.allocate();
+        root->Walk(j)->SetIndex(j);
+    }
     
     // Populate the rest of the entries
     size_t i = 0;
     for (DataFile::dictentry_t d : dictionary)
     {
-        dicttree_t* node = root;
-        for (bool b : d.replacement)
+        DictTreeNode* node = root;
+        for (uint8_t p : d.replacement)
         {
-            dicttree_t* &branch = node->walk(b);
+            DictTreeNode* &branch = node->Walk(p);
             if (!branch)
                 branch = storage.allocate();
             
             node = branch;
         }
         
-        if (node->index < 0)
+        if (node->GetIndex() < 0)
         {
-            node->index = i + DICT_START;
-            node->ref = d.ref_encode;
+            node->SetIndex(i + DICT_START);
+            node->SetRef(d.ref_encode);
         }
         i++;
     }
@@ -150,33 +206,33 @@ static dicttree_t* construct_tree(const std::vector<DataFile::dictentry_t> &dict
     return root;
 }
 
-// Walk the tree as far as possible following the given bitstring iterator.
-// Returns number of bits encoded, and index is set to the dictionary reference.
-static size_t walk_tree(const dicttree_t *tree,
-                        DataFile::bitstring_t::const_iterator bits,
-                        DataFile::bitstring_t::const_iterator bitsend,
+// Walk the tree as far as possible following the given pixel string iterator.
+// Returns number of pixels encoded, and index is set to the dictionary reference.
+static size_t walk_tree(const DictTreeNode *tree,
+                        DataFile::pixels_t::const_iterator pixels,
+                        DataFile::pixels_t::const_iterator pixelsend,
                         int &index, bool is_glyph)
 {
     size_t best_length = 0;
     size_t length = 0;
     index = -1;
     
-    const dicttree_t* node = tree;
-    while (bits != bitsend)
+    const DictTreeNode* node = tree;
+    while (pixels != pixelsend)
     {
-        bool b = *bits++;
-        node = node->walk(b);
+        uint8_t pixel = *pixels++;
+        node = node->Walk(pixel);
         
         if (!node)
             break;
         
         length++;
         
-        if (is_glyph || !node->ref)
+        if (is_glyph || !node->GetRef())
         {
-            if (node->index >= 0)
+            if (node->GetIndex() >= 0)
             {
-                index = node->index;
+                index = node->GetIndex();
                 best_length = length;
             }
         }
@@ -189,29 +245,29 @@ static size_t walk_tree(const dicttree_t *tree,
 }
 
 // Perform the reference encoding for a glyph entry.
-static encoded_font_t::refstring_t encode_ref(const DataFile::bitstring_t &bits,
-                                              const dicttree_t *tree,
+static encoded_font_t::refstring_t encode_ref(const DataFile::pixels_t &pixels,
+                                              const DictTreeNode *tree,
                                               bool is_glyph)
 {
     encoded_font_t::refstring_t result;
     
     // Strip any zeroes from end
-    size_t end = bits.size();
+    size_t end = pixels.size();
     
     if (is_glyph)
     {
-        while (end > 0 && bits.at(end - 1) != true) end--;
+        while (end > 0 && pixels.at(end - 1) == 0) end--;
     }
     
     size_t i = 0;
     while (i < end)
     {
         int index;
-        i += walk_tree(tree, bits.begin() + i, bits.end(), index, is_glyph);
+        i += walk_tree(tree, pixels.begin() + i, pixels.end(), index, is_glyph);
         result.push_back(index);
     }
     
-    if (i < bits.size())
+    if (i < pixels.size())
         result.push_back(REF_FILLZEROS);
     
     return result;
@@ -234,7 +290,7 @@ static bool cmp_dict_coding(const DataFile::dictentry_t &a,
 
 size_t estimate_tree_node_count(const std::vector<DataFile::dictentry_t> &dict)
 {
-    size_t count = 3; // Preallocated entries
+    size_t count = DICT_START; // Preallocated entries
     for (const DataFile::dictentry_t &d: dict)
     {
         count += d.replacement.size();
@@ -255,7 +311,7 @@ std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile,
     // Build the binary tree for looking up references.
     size_t count = estimate_tree_node_count(sorted_dict);
     TreeAllocator allocator(count);
-    dicttree_t* tree = construct_tree(sorted_dict, allocator);
+    DictTreeNode* tree = construct_tree(sorted_dict, allocator);
     
     // Encode the dictionary entries, using either RLE or reference method.
     for (DataFile::dictentry_t d : sorted_dict)
@@ -285,7 +341,7 @@ std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile,
     {
         for (size_t i = 0; i < datafile.GetGlyphCount(); i++)
         {
-            std::unique_ptr<DataFile::bitstring_t> decoded = 
+            std::unique_ptr<DataFile::pixels_t> decoded = 
                 decode_glyph(*result, i, datafile.GetFontInfo());
             if (*decoded != datafile.GetGlyphEntry(i).data)
                 throw std::logic_error("verification of glyph " + std::to_string(i) + " failed");
@@ -321,26 +377,22 @@ size_t get_encoded_size(const encoded_font_t &encoded)
     return total;
 }
 
-std::unique_ptr<DataFile::bitstring_t> decode_glyph(
+std::unique_ptr<DataFile::pixels_t> decode_glyph(
     const encoded_font_t &encoded,
     const encoded_font_t::refstring_t &refstring,
     const DataFile::fontinfo_t &fontinfo)
 {
-    std::unique_ptr<DataFile::bitstring_t> result(new DataFile::bitstring_t);
+    std::unique_ptr<DataFile::pixels_t> result(new DataFile::pixels_t);
     
     for (uint8_t ref : refstring)
     {
-        if (ref == 0)
+        if (ref <= 15)
         {
-            result->push_back(false);
-        }
-        else if (ref == 15)
-        {
-            result->push_back(true);
+            result->push_back(ref);
         }
         else if (ref == REF_FILLZEROS)
         {
-            result->resize(fontinfo.max_width * fontinfo.max_height, false);
+            result->resize(fontinfo.max_width * fontinfo.max_height, 0);
         }
         else if (ref < DICT_START)
         {
@@ -354,21 +406,21 @@ std::unique_ptr<DataFile::bitstring_t> decode_glyph(
                 {
                     for (int i = 0; i < (rle & RLE_VALMASK); i++)
                     {
-                        result->push_back(false);
+                        result->push_back(0);
                     }
                 }
                 else if ((rle & RLE_CODEMASK) == RLE_64ZEROS)
                 {
                     for (int i = 0; i < ((rle & RLE_VALMASK) + 1) * 64; i++)
                     {
-                        result->push_back(false);
+                        result->push_back(0);
                     }
                 }
                 else if ((rle & RLE_CODEMASK) == RLE_ONES)
                 {
                     for (int i = 0; i < (rle & RLE_VALMASK) + 1; i++)
                     {
-                        result->push_back(true);
+                        result->push_back(15);
                     }
                 }
             }
@@ -376,7 +428,7 @@ std::unique_ptr<DataFile::bitstring_t> decode_glyph(
         else
         {
             size_t index = ref - DICT_START - encoded.rle_dictionary.size();
-            std::unique_ptr<DataFile::bitstring_t> part =
+            std::unique_ptr<DataFile::pixels_t> part =
                 decode_glyph(encoded, encoded.ref_dictionary.at(index),
                              fontinfo);
             result->insert(result->end(), part->begin(), part->end());
@@ -386,7 +438,7 @@ std::unique_ptr<DataFile::bitstring_t> decode_glyph(
     return result;
 }
 
-std::unique_ptr<DataFile::bitstring_t> decode_glyph(
+std::unique_ptr<DataFile::pixels_t> decode_glyph(
     const encoded_font_t &encoded, size_t index,
     const DataFile::fontinfo_t &fontinfo)
 {

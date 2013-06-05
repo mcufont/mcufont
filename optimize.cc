@@ -7,22 +7,22 @@
 typedef std::mt19937 rnd_t;
 
 // Select a random substring among all the glyphs in the datafile.
-std::unique_ptr<DataFile::bitstring_t> random_substring(const DataFile &datafile, rnd_t &rnd)
+std::unique_ptr<DataFile::pixels_t> random_substring(const DataFile &datafile, rnd_t &rnd)
 {
     std::uniform_int_distribution<size_t> dist1(0, datafile.GetGlyphCount() - 1);
     size_t index = dist1(rnd);
     
-    const DataFile::bitstring_t &bitstring = datafile.GetGlyphEntry(index).data;
+    const DataFile::pixels_t &pixels = datafile.GetGlyphEntry(index).data;
     
-    std::uniform_int_distribution<size_t> dist2(2, bitstring.size());
+    std::uniform_int_distribution<size_t> dist2(2, pixels.size());
     size_t length = dist2(rnd);
     
-    std::uniform_int_distribution<size_t> dist3(0, bitstring.size() - length);
+    std::uniform_int_distribution<size_t> dist3(0, pixels.size() - length);
     size_t start = dist3(rnd);
     
-    std::unique_ptr<DataFile::bitstring_t> result;
-    result.reset(new DataFile::bitstring_t(bitstring.begin() + start,
-                                       bitstring.begin() + start + length));
+    std::unique_ptr<DataFile::pixels_t> result;
+    result.reset(new DataFile::pixels_t(pixels.begin() + start,
+                                        pixels.begin() + start + length));
     return result;
 }
 
@@ -74,29 +74,40 @@ void optimize_any(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
 }
 
 // Try to append or prepend random dictionary entry.
-void optimize_expand(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
+void optimize_expand(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose, bool binary_only)
 {
     DataFile trial = datafile;
     std::uniform_int_distribution<size_t> dist1(0, DataFile::dictionarysize - 1);
     size_t index = dist1(rnd);
     DataFile::dictentry_t d = trial.GetDictionaryEntry(index);
     
-    std::uniform_int_distribution<size_t> dist3(1, 10);
+    std::uniform_int_distribution<size_t> dist3(1, 3);
     size_t count = dist3(rnd);
     
     for (size_t i = 0; i < count; i++)
     {
-        std::uniform_int_distribution<size_t> dist2(0, 1);
-        bool bit = dist2(rnd);
-        bool prepend = dist2(rnd);
+        std::uniform_int_distribution<size_t> booldist(0, 1);
+        std::uniform_int_distribution<size_t> pixeldist(0, 15);
+        uint8_t pixel;
         
-        if (prepend)
+        if (binary_only)
         {
-            d.replacement.insert(d.replacement.begin(), bit);
+            pixel = booldist(rnd) ? 15 : 0;
         }
         else
         {
-            d.replacement.push_back(bit);
+            pixel = pixeldist(rnd);
+        }
+        
+        bool prepend = booldist(rnd);
+        
+        if (prepend)
+        {
+            d.replacement.insert(d.replacement.begin(), pixel);
+        }
+        else
+        {
+            d.replacement.push_back(pixel);
         }
     }
     
@@ -112,7 +123,7 @@ void optimize_expand(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
         
         if (verbose)
             std::cout << "optimize_expand: expanded " << index
-                      << " by " << count << " bits, score " << d.score << std::endl;
+                      << " by " << count << " pixels, score " << d.score << std::endl;
     }
 }
 
@@ -152,8 +163,8 @@ void optimize_trim(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
         
         if (verbose)
             std::cout << "optimize_trim: trimmed " << index
-                      << " by " << start << " bits from start and "
-                      << end << " bits from end, score " << d.score << std::endl;
+                      << " by " << start << " pixels from start and "
+                      << end << " pixels from end, score " << d.score << std::endl;
     }
 }
 
@@ -193,8 +204,8 @@ void optimize_combine(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose
     size_t index1 = dist1(rnd);
     size_t index2 = dist1(rnd);
     
-    const DataFile::bitstring_t &part1 = datafile.GetDictionaryEntry(index1).replacement;
-    const DataFile::bitstring_t &part2 = datafile.GetDictionaryEntry(index2).replacement;
+    const DataFile::pixels_t &part1 = datafile.GetDictionaryEntry(index1).replacement;
+    const DataFile::pixels_t &part2 = datafile.GetDictionaryEntry(index2).replacement;
     
     DataFile::dictentry_t d;
     d.replacement = part1;
@@ -214,45 +225,6 @@ void optimize_combine(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose
             std::cout << "optimize_combine: combined " << index1
                       << " and " << index2 << " to replace " << worst
                       << ", score " << d.score << std::endl;
-    }
-}
-
-// Discard a few dictionary entries and try to incrementally find better ones.
-void optimize_bigjump(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
-{
-    DataFile trial = datafile;
-    std::uniform_int_distribution<size_t> dist(0, DataFile::dictionarysize - 1);
-    std::uniform_int_distribution<size_t> dist2(1, 20);
-    
-    int dropcount = dist2(rnd);
-    for (int i = 0; i < dropcount; i++)
-    {
-        size_t index = dist(rnd);
-        DataFile::dictentry_t d = trial.GetDictionaryEntry(index);
-        d.replacement.clear();
-        d.score = 0;
-        trial.SetDictionaryEntry(index, d);
-    }
-    
-    size_t newsize = get_encoded_size(trial);
-    
-    for (size_t i = 0; i < 25; i++)
-    {
-        optimize_worst(trial, newsize, rnd, false);
-        optimize_any(trial, newsize, rnd, false);
-        optimize_expand(trial, newsize, rnd, false);
-        optimize_refdict(trial, newsize, rnd, false);
-        optimize_combine(trial, newsize, rnd, false);
-    }
-    
-    if (newsize < size)
-    {
-        if (verbose)
-            std::cout << "optimize_bigjump: replaced " << dropcount
-                      << " entries, score " << (size - newsize) << std::endl;
-        
-        datafile = trial;
-        size = newsize;
     }
 }
 
@@ -291,13 +263,13 @@ void init_dictionary(DataFile &datafile)
 {
     rnd_t rnd(datafile.GetSeed());
     
-    std::set<DataFile::bitstring_t> seen_substrings;
-    std::set<DataFile::bitstring_t> added_substrings;
+    std::set<DataFile::pixels_t> seen_substrings;
+    std::set<DataFile::pixels_t> added_substrings;
     
     size_t i = 0;
     while (i < DataFile::dictionarysize)
     {
-        DataFile::bitstring_t substring = *random_substring(datafile, rnd);
+        DataFile::pixels_t substring = *random_substring(datafile, rnd);
         
         if (!seen_substrings.count(substring))
         {
@@ -329,13 +301,12 @@ void optimize(DataFile &datafile, size_t iterations)
     {
         optimize_worst(datafile, size, rnd, verbose);
         optimize_any(datafile, size, rnd, verbose);
-        optimize_expand(datafile, size, rnd, verbose);
+        optimize_expand(datafile, size, rnd, verbose, false);
+        optimize_expand(datafile, size, rnd, verbose, true);
         optimize_trim(datafile, size, rnd, verbose);
         optimize_refdict(datafile, size, rnd, verbose);
         optimize_combine(datafile, size, rnd, verbose);
     }
-    
-    //optimize_bigjump(datafile, size, rnd, verbose);
     
     std::uniform_int_distribution<size_t> dist(0, std::numeric_limits<uint32_t>::max());
     datafile.SetSeed(dist(rnd));

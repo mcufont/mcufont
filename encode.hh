@@ -39,7 +39,7 @@ inline size_t get_encoded_size(const DataFile &datafile)
 
 
 // Decode a single glyph (for verification).
-std::unique_ptr<DataFile::bitstring_t> decode_glyph(
+std::unique_ptr<DataFile::pixels_t> decode_glyph(
     const encoded_font_t &encoded, size_t index,
     const DataFile::fontinfo_t &fontinfo);
 
@@ -87,7 +87,7 @@ public:
         
         for (size_t i = 0; i < 3; i++)
         {
-            std::unique_ptr<DataFile::bitstring_t> dec;
+            std::unique_ptr<DataFile::pixels_t> dec;
             dec = decode_glyph(*e, i, f->GetFontInfo());
             
             TS_ASSERT(*dec == f->GetGlyphEntry(i).data);

@@ -102,7 +102,7 @@ static void write_rle_dictentry(const struct rlefont_s *font,
         {
             uint8_t count, alpha;
             count = (code & RLE_VALMASK) >> 4;
-            alpha = ((code & RLE_VALMASK) >> 4) * 0x10;
+            alpha = ((code & RLE_VALMASK) >> 4) * 0x11;
             write_pixels(rstate, count, alpha);
         }
     }

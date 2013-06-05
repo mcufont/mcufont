@@ -131,10 +131,13 @@ static bool parse_glyph(std::istream &file, DataFile::glyphentry_t &glyph,
         for (int x = 0; x < bbx_w; x++)
         {
             int nibble = hextoint(line.at(x / 4));
-            bool bit = nibble & (8 >> (x % 4));
-            glyph.data.at(y * fontinfo.max_width + x0 + x) = bit;
+            uint8_t pixel = 0;
+            if (nibble & (8 >> (x % 4)))
+                pixel = 15;
             
-            if (bit)
+            glyph.data.at(y * fontinfo.max_width + x0 + x) = pixel;
+            
+            if (pixel)
                 bbox.update(x0 + x, y);
         }
         
@@ -177,7 +180,7 @@ static void crop_glyphs(std::vector<DataFile::glyphentry_t> &glyphtable,
     size_t new_h = bbox.bottom - bbox.top + 1;
     for (DataFile::glyphentry_t &glyph : glyphtable)
     {
-        DataFile::bitstring_t old = glyph.data;
+        DataFile::pixels_t old = glyph.data;
         glyph.data.clear();
         
         for (size_t y = 0; y < new_h; y++)
@@ -187,8 +190,6 @@ static void crop_glyphs(std::vector<DataFile::glyphentry_t> &glyphtable,
                 size_t old_x = bbox.left + x;
                 size_t old_y = bbox.top + y;
                 size_t old_pos = old_w * old_y + old_x; 
-                bool val = old.at(old_pos);
-                (void)val;
                 glyph.data.push_back(old.at(old_pos));
             }
         }

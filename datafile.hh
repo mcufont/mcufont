@@ -2,6 +2,7 @@
 // This class can be safely cloned using the default copy constructor.
 
 #pragma once
+#include <cstdint>
 #include <vector>
 #include <string>
 #include <fstream>
@@ -10,11 +11,11 @@
 class DataFile
 {
 public:
-    typedef std::vector<bool> bitstring_t;
+    typedef std::vector<uint8_t> pixels_t;
     
     struct dictentry_t
     {
-        bitstring_t replacement; // The expanded version of this block.
+        pixels_t replacement; // The expanded version of this block.
         int score; // Number of bytes that having this entry saves.
         bool ref_encode; // Encode using references to other dictionary entries.
         
@@ -23,7 +24,7 @@ public:
     
     struct glyphentry_t
     {
-        bitstring_t data; // The full data of the glyph.
+        pixels_t data; // The full data of the glyph.
         std::vector<int> chars; // Characters that this glyph represents.
         int width; // Kerning width of the character.
     };
@@ -94,8 +95,8 @@ private:
     void UpdateLowScoreIndex();
 };
 
-std::ostream& operator<<(std::ostream& os, const DataFile::bitstring_t& str);
-std::istream& operator>>(std::istream& is, DataFile::bitstring_t& str);
+std::ostream& operator<<(std::ostream& os, const DataFile::pixels_t& str);
+std::istream& operator>>(std::istream& is, DataFile::pixels_t& str);
 
 
 #ifdef CXXTEST_RUNNING
@@ -116,8 +117,8 @@ public:
         TS_ASSERT_EQUALS(f->GetDictionaryEntry(1).score, 13);
         TS_ASSERT_EQUALS(f->GetGlyphCount(), 3);
         
-        DataFile::bitstring_t expected = {
-            0,1,0,1, 0,1,0,1, 0,1,0,1, 0,1,0,1, 0,1,0,1, 0,1,0,1
+        DataFile::pixels_t expected = {
+            0,15,0,15, 0,15,0,15, 0,15,0,15, 0,15,0,15, 0,15,0,15, 0,15,0,15
         };
         TS_ASSERT_EQUALS(f->GetGlyphEntry(0).data.size(), 24);
         TS_ASSERT(f->GetGlyphEntry(0).data == expected);
