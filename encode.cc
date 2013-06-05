@@ -95,12 +95,12 @@ public:
         m_child15(nullptr)
         {}
     
-    DictTreeNode* &Walk(uint8_t p)
+    void SetChild(uint8_t p, DictTreeNode *child)
     {
         if (p == 0)
-            return m_child0;
+            m_child0 = child;
         else if (p == 15)
-            return m_child15;
+            m_child15 = child;
         else if (p > 15)
             throw std::logic_error("invalid pixel alpha: " + std::to_string(p));
         else
@@ -109,11 +109,11 @@ public:
             {
                 m_children.reset(new DictTreeNode*[14]());
             }
-            return m_children[p - 1];
+            m_children[p - 1] = child;
         }
     }
     
-    const DictTreeNode* Walk(uint8_t p) const
+    DictTreeNode* GetChild(uint8_t p) const
     { 
         if (p == 0)
             return m_child0;
@@ -177,8 +177,9 @@ static DictTreeNode* construct_tree(const std::vector<DataFile::dictentry_t> &di
     // Populate the hardcoded entries for 0 to 15 alpha.
     for (int j = 0; j < 16; j++)
     {
-        root->Walk(j) = storage.allocate();
-        root->Walk(j)->SetIndex(j);
+        DictTreeNode *node = storage.allocate();
+        node->SetIndex(j);
+        root->SetChild(j, node);
     }
     
     // Populate the rest of the entries
@@ -188,9 +189,12 @@ static DictTreeNode* construct_tree(const std::vector<DataFile::dictentry_t> &di
         DictTreeNode* node = root;
         for (uint8_t p : d.replacement)
         {
-            DictTreeNode* &branch = node->Walk(p);
+            DictTreeNode* branch = node->GetChild(p);
             if (!branch)
+            {
                 branch = storage.allocate();
+                node->SetChild(p, branch);
+            }
             
             node = branch;
         }
@@ -221,7 +225,7 @@ static size_t walk_tree(const DictTreeNode *tree,
     while (pixels != pixelsend)
     {
         uint8_t pixel = *pixels++;
-        node = node->Walk(pixel);
+        node = node->GetChild(pixel);
         
         if (!node)
             break;
