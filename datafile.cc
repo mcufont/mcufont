@@ -85,7 +85,7 @@ std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
         {
             input >> seed;
         }
-        else if (tag == "DictEntry")
+        else if (tag == "DictEntry" && dictionary.size() < dictionarysize)
         {
             dictentry_t d = {};
             input >> d.score >> d.ref_encode >> d.replacement;

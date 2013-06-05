@@ -1,7 +1,18 @@
 #include "rlefont.h"
 
 /* Number of reserved codes before the dictionary entries. */
-#define DICT_START 4
+#define DICT_START 24
+
+/* Special reference to mean "fill with zeros to the end of the glyph" */
+#define REF_FILLZEROS 16
+
+/* RLE codes */
+#define RLE_CODEMASK    0xC0
+#define RLE_VALMASK     0x3F
+#define RLE_ZEROS       0x00
+#define RLE_64ZEROS     0x40
+#define RLE_ONES        0x80
+#define RLE_SHADE       0xC0
 
 /* Find a pointer to the glyph matching a given character by searching
  * through the character ranges. If the character is not found, return
@@ -75,14 +86,24 @@ static void write_rle_dictentry(const struct rlefont_s *font,
     for (i = 0; i < length; i++)
     {
         uint8_t code = font->dictionary_data[offset + i];
-        if (code & 0x80)
+        if ((code & RLE_CODEMASK) == RLE_ZEROS)
         {
-            code &= 0x7F;
-            write_pixels(rstate, code, 255);
+            write_pixels(rstate, code & RLE_VALMASK, 0);
         }
-        else
+        else if ((code & RLE_CODEMASK) == RLE_64ZEROS)
         {
-            write_pixels(rstate, code, 0);
+            write_pixels(rstate, ((code & RLE_VALMASK) + 1) * 64, 0);
+        }
+        else if ((code & RLE_CODEMASK) == RLE_ONES)
+        {
+            write_pixels(rstate, (code & RLE_VALMASK) + 1, 255);
+        }
+        else if ((code & RLE_CODEMASK) == RLE_SHADE)
+        {
+            uint8_t count, alpha;
+            count = (code & RLE_VALMASK) >> 4;
+            alpha = ((code & RLE_VALMASK) >> 4) * 0x10;
+            write_pixels(rstate, count, alpha);
         }
     }
 }
@@ -92,15 +113,11 @@ static void write_ref_codeword(const struct rlefont_s *font,
                                 struct renderstate_r *rstate,
                                 uint8_t code)
 {
-    if (code == 0)
+    if (code <= 15)
     {
-        write_pixels(rstate, 1, 0);
+        write_pixels(rstate, 1, 0x10 * code);
     }
-    else if (code == 1)
-    {
-        write_pixels(rstate, 1, 255);
-    }
-    else if (code == 2)
+    else if (code == 16)
     {
         uint16_t remaining;
         remaining = (rstate->y_end - rstate->y) * font->width

@@ -59,10 +59,10 @@ public:
         TS_ASSERT_EQUALS(e->glyphs.size(), 3);
         
         // Expected values for dictionary
-        encoded_font_t::rlestring_t dict0 = {0x01, 0x81, 0x01, 0x81};
+        encoded_font_t::rlestring_t dict0 = {0x01, 0x80, 0x01, 0x80};
         encoded_font_t::rlestring_t dict1 = {0x04};
-        encoded_font_t::rlestring_t dict2 = {0x84};
-        encoded_font_t::refstring_t dict3 = {4, 4};
+        encoded_font_t::rlestring_t dict2 = {0x83};
+        encoded_font_t::refstring_t dict3 = {24, 24};
         
         TS_ASSERT(e->rle_dictionary.at(0) == dict0);
         TS_ASSERT(e->rle_dictionary.at(1) == dict1);
@@ -70,9 +70,9 @@ public:
         TS_ASSERT(e->ref_dictionary.at(0) == dict3);
         
         // Expected values for glyphs
-        encoded_font_t::refstring_t glyph0 = {7, 7, 7};
-        encoded_font_t::refstring_t glyph1 = {4, 5, 5, 5, 5, 0, 0, 0, 1};
-        encoded_font_t::refstring_t glyph2 = {5, 6, 0, 0, 0, 1, 1, 1, 5, 6, 2};
+        encoded_font_t::refstring_t glyph0 = {27, 27, 27};
+        encoded_font_t::refstring_t glyph1 = {24, 25, 25, 25, 25, 0, 0, 0, 15};
+        encoded_font_t::refstring_t glyph2 = {25, 26, 0, 0, 0, 15, 15, 15, 25, 26, 16};
         
         TS_ASSERT(e->glyphs.at(0) == glyph0);
         TS_ASSERT(e->glyphs.at(1) == glyph1);

@@ -50,8 +50,8 @@ public:
     static std::unique_ptr<DataFile> Load(std::istream &file);
     
     // Get or set an entry in the dictionary. The size of the dictionary
-    // is constant. Entries 0 to 3 are reserved for special purposes.
-    static const size_t dictionarysize = 252;
+    // is constant. Entries 0 to 23 are reserved for special purposes.
+    static const size_t dictionarysize = 256 - 24;
     const dictentry_t &GetDictionaryEntry(size_t index) const
         { return m_dictionary.at(index); }
     void SetDictionaryEntry(size_t index, const dictentry_t &value);

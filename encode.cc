@@ -2,6 +2,33 @@
 #include <algorithm>
 #include <stdexcept>
 
+// Number of reserved codes before the dictionary entries.
+#define DICT_START 24
+
+// Special reference to mean "fill with zeros to the end of the glyph"
+#define REF_FILLZEROS 16
+
+// RLE codes
+#define RLE_CODEMASK    0xC0
+#define RLE_VALMASK     0x3F
+#define RLE_ZEROS       0x00 // 0 to 63 zeros
+#define RLE_64ZEROS     0x40 // (1 to 64) * 64 zeros
+#define RLE_ONES        0x80 // 1 to 64 full alphas
+#define RLE_SHADE       0xC0 // 1 to 4 partial alphas
+
+// Count the number of equal bits at the beginning of the bitstring.
+static size_t prefix_length(const DataFile::bitstring_t &bits, size_t pos)
+{
+    bool bit = bits.at(pos);
+    size_t count = 1;
+    while (pos + count < bits.size() &&
+            bits.at(pos + count) == bit)
+    {
+        count++;
+    }
+    return count;
+}
+
 // Perform the RLE encoding for a dictionary entry.
 static encoded_font_t::rlestring_t encode_rle(const DataFile::bitstring_t &bits)
 {
@@ -11,18 +38,35 @@ static encoded_font_t::rlestring_t encode_rle(const DataFile::bitstring_t &bits)
     while (pos < bits.size())
     {
         bool bit = bits.at(pos);
-        size_t count = 1;
-        while (pos + count < bits.size() &&
-               count < 127 &&
-               bits.at(pos + count) == bit)
-        {
-            count++;
-        }
-        
-        uint8_t byte = (bit ? 0x80 : 0x00) | count;
-        result.push_back(byte);
-        
+        size_t count = prefix_length(bits, pos);
         pos += count;
+        
+        if (bit == false)
+        {
+            // Up to 63 zeros can be encoded with RLE_ZEROS. If there are more,
+            // encode using RLE_64ZEROS, and then whatever remains with RLE_ZEROS.
+            while (count >= 64)
+            {
+                size_t c = (count > 4096) ? 64 : (count / 64);
+                result.push_back(RLE_64ZEROS | (c - 1));
+                count -= c * 64;
+            }
+            
+            if (count)
+            {
+                result.push_back(RLE_ZEROS | count);
+            }
+        }
+        else
+        {
+            // Encode ones.
+            while (count)
+            {
+                size_t c = (count > 64) ? 64 : count;
+                result.push_back(RLE_ONES | (c - 1));
+                count -= c;
+            }
+        }
     }
     
     return result;
@@ -75,11 +119,11 @@ static dicttree_t* construct_tree(const std::vector<DataFile::dictentry_t> &dict
 {
     dicttree_t* root = storage.allocate();
     
-    // Populate the hardcoded 0 and 1 entries
+    // Populate the hardcoded entries for 0 and 255 alpha.
     root->zero = storage.allocate();
     root->zero->index = 0;
     root->one = storage.allocate();
-    root->one->index = 1;
+    root->one->index = 15;
     
     // Populate the rest of the entries
     size_t i = 0;
@@ -97,9 +141,10 @@ static dicttree_t* construct_tree(const std::vector<DataFile::dictentry_t> &dict
         
         if (node->index < 0)
         {
-            node->index = (i++) + 4;
+            node->index = i + DICT_START;
             node->ref = d.ref_encode;
         }
+        i++;
     }
     
     return root;
@@ -167,7 +212,7 @@ static encoded_font_t::refstring_t encode_ref(const DataFile::bitstring_t &bits,
     }
     
     if (i < bits.size())
-        result.push_back(2);
+        result.push_back(REF_FILLZEROS);
     
     return result;
 }
@@ -243,7 +288,7 @@ std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile,
             std::unique_ptr<DataFile::bitstring_t> decoded = 
                 decode_glyph(*result, i, datafile.GetFontInfo());
             if (*decoded != datafile.GetGlyphEntry(i).data)
-                throw std::logic_error("verification of glyph failed");
+                throw std::logic_error("verification of glyph " + std::to_string(i) + " failed");
         }
     }
     
@@ -289,32 +334,48 @@ std::unique_ptr<DataFile::bitstring_t> decode_glyph(
         {
             result->push_back(false);
         }
-        else if (ref == 1)
+        else if (ref == 15)
         {
             result->push_back(true);
         }
-        else if (ref == 2)
+        else if (ref == REF_FILLZEROS)
         {
             result->resize(fontinfo.max_width * fontinfo.max_height, false);
         }
-        else if (ref == 3)
+        else if (ref < DICT_START)
         {
-            // Reserved
+            throw std::logic_error("unknown code: " + std::to_string(ref));
         }
-        else if (ref - 4 < (int)encoded.rle_dictionary.size())
+        else if (ref - DICT_START < (int)encoded.rle_dictionary.size())
         {
-            for (uint8_t rle : encoded.rle_dictionary.at(ref - 4))
+            for (uint8_t rle : encoded.rle_dictionary.at(ref - DICT_START))
             {
-                bool bit = (rle & 0x80);
-                for (int i = 0; i < (rle & 0x7F); i++)
+                if ((rle & RLE_CODEMASK) == RLE_ZEROS)
                 {
-                    result->push_back(bit);
+                    for (int i = 0; i < (rle & RLE_VALMASK); i++)
+                    {
+                        result->push_back(false);
+                    }
+                }
+                else if ((rle & RLE_CODEMASK) == RLE_64ZEROS)
+                {
+                    for (int i = 0; i < ((rle & RLE_VALMASK) + 1) * 64; i++)
+                    {
+                        result->push_back(false);
+                    }
+                }
+                else if ((rle & RLE_CODEMASK) == RLE_ONES)
+                {
+                    for (int i = 0; i < (rle & RLE_VALMASK) + 1; i++)
+                    {
+                        result->push_back(true);
+                    }
                 }
             }
         }
         else
         {
-            size_t index = ref - 4 - encoded.rle_dictionary.size();
+            size_t index = ref - DICT_START - encoded.rle_dictionary.size();
             std::unique_ptr<DataFile::bitstring_t> part =
                 decode_glyph(encoded, encoded.ref_dictionary.at(index),
                              fontinfo);
