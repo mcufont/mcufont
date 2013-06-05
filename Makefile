@@ -6,7 +6,7 @@ OBJS = bdffont.o datafile.o encode.o optimize.o c_export.o
 all: run_unittests compress
 
 compress: main.o $(OBJS)
-	g++ $(CXXFLAGS) -o $@ $^
+	g++ $(CXXFLAGS) -o $@ $^ -pthread
 
 unittests.cc: *.hh
 	cxxtestgen --have-eh --error-printer -o unittests.cc $^

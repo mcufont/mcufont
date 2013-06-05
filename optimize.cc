@@ -3,6 +3,8 @@
 #include <random>
 #include <iostream>
 #include <set>
+#include <thread>
+#include <algorithm>
 
 typedef std::mt19937 rnd_t;
 
@@ -228,6 +230,54 @@ void optimize_combine(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose
     }
 }
 
+// Execute all the optimization algorithms once.
+void optimize_pass(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
+{
+    optimize_worst(datafile, size, rnd, verbose);
+    optimize_any(datafile, size, rnd, verbose);
+    optimize_expand(datafile, size, rnd, verbose, false);
+    optimize_expand(datafile, size, rnd, verbose, true);
+    optimize_trim(datafile, size, rnd, verbose);
+    optimize_refdict(datafile, size, rnd, verbose);
+    optimize_combine(datafile, size, rnd, verbose);
+}
+
+// Execute multiple passes in parallel and take the one with the best result.
+// The amount of parallelism is hardcoded in order to retain deterministic
+// behaviour.
+void optimize_parallel(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose, int num_threads = 4)
+{
+    std::vector<DataFile> datafiles;
+    std::vector<size_t> sizes;
+    std::vector<rnd_t> rnds;
+    std::vector<std::unique_ptr<std::thread> > threads;
+    
+    for (int i = 0; i < num_threads; i++)
+    {
+        datafiles.emplace_back(datafile);
+        sizes.emplace_back(size);
+        rnds.emplace_back(rnd());
+    }
+    
+    for (int i = 0; i < num_threads; i++)
+    {
+        threads.emplace_back(new std::thread(optimize_pass,
+                                             std::ref(datafiles.at(i)),
+                                             std::ref(sizes.at(i)),
+                                             std::ref(rnds.at(i)),
+                                             verbose));
+    }
+    
+    for (int i = 0; i < num_threads; i++)
+    {
+        threads.at(i)->join();
+    }
+    
+    int best = std::min_element(sizes.begin(), sizes.end()) - sizes.begin();
+    size = sizes.at(best);
+    datafile = datafiles.at(best);
+}
+
 // Go through all the dictionary entries and check what it costs to remove
 // them. Removes any entries with negative or zero score.
 void update_scores(DataFile &datafile, bool verbose)
@@ -299,13 +349,7 @@ void optimize(DataFile &datafile, size_t iterations)
     
     for (size_t i = 0; i < iterations; i++)
     {
-        optimize_worst(datafile, size, rnd, verbose);
-        optimize_any(datafile, size, rnd, verbose);
-        optimize_expand(datafile, size, rnd, verbose, false);
-        optimize_expand(datafile, size, rnd, verbose, true);
-        optimize_trim(datafile, size, rnd, verbose);
-        optimize_refdict(datafile, size, rnd, verbose);
-        optimize_combine(datafile, size, rnd, verbose);
+        optimize_parallel(datafile, size, rnd, verbose);
     }
     
     std::uniform_int_distribution<size_t> dist(0, std::numeric_limits<uint32_t>::max());
