@@ -1,4 +1,4 @@
-CXXFLAGS = -O0 -Wall -Werror -Wno-unused-function -std=c++11
+CXXFLAGS = -O2 -Wall -Werror -Wno-unused-function -std=c++11
 CXXFLAGS += -ggdb
 LDFLAGS += -pthread
 

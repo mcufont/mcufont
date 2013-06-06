@@ -29,7 +29,7 @@ static std::string strip_extension(std::string filename)
 
 static const char *usage_msg =
     "Usage:\n"
-    "   import <ttffile>                Import a .ttf font into a data file.\n"
+    "   import <ttffile> <size>         Import a .ttf font into a data file.\n"
     "   import_bdf <bdffile>            Import a .bdf font into a data file.\n"
     "   export <datfile> <basename>     Export to .c and .h source code.\n"
     "   filter <datfile> <range> ...    Remove everything except specified characters.\n"
@@ -44,10 +44,11 @@ int main(int argc, char **argv)
     for (int i = 1; i < argc; i++)
         args.push_back(argv[i]);
     
-    if (args.size() == 2 && args.at(0) == "import")
+    if (args.size() == 3 && args.at(0) == "import")
     {
         std::string src = args.at(1);
-        std::string dest = strip_extension(args.at(1)) + ".dat";
+        int size = std::stoi(args.at(2));
+        std::string dest = strip_extension(args.at(1)) + std::to_string(size) + ".dat";
         std::ifstream infile(src);
         
         if (!infile.good())
@@ -58,7 +59,7 @@ int main(int argc, char **argv)
         
         std::cout << "Importing " << src << " to " << dest << std::endl;
         
-        std::unique_ptr<DataFile> f = LoadFreetype(infile);
+        std::unique_ptr<DataFile> f = LoadFreetype(infile, size);
         
         init_dictionary(*f);
         
@@ -140,7 +141,7 @@ int main(int argc, char **argv)
                 int start = std::stoi(s.substr(0, pos), nullptr, 0);
                 int end = std::stoi(s.substr(pos + 1), nullptr, 0);
                 
-                for (int j = start; j < end; j++)
+                for (int j = start; j <= end; j++)
                 {
                     allowed.insert(j);
                 }

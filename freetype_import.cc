@@ -68,7 +68,7 @@ static void readfile(std::istream &file, std::vector<char> &data)
     }
 }
 
-std::unique_ptr<DataFile> LoadFreetype(std::istream &file)
+std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size)
 {
     std::vector<char> data;
     readfile(file, data);
@@ -76,7 +76,6 @@ std::unique_ptr<DataFile> LoadFreetype(std::istream &file)
     _FT_Library lib;
     _FT_Face face(lib, data);
     
-    int size = 16;
     checkFT(FT_Set_Pixel_Sizes(face, size, size));
     
     DataFile::fontinfo_t fontinfo = {};
@@ -105,13 +104,13 @@ std::unique_ptr<DataFile> LoadFreetype(std::istream &file)
         checkFT(FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL));
         
         DataFile::glyphentry_t glyph;
-        glyph.width = topx(face->glyph->advance.x);
+        glyph.width = (face->glyph->advance.x + 32) / 64;
         glyph.chars.push_back(charcode);
         glyph.data.resize(fontinfo.max_width * fontinfo.max_height);
         
         int w = face->glyph->bitmap.width;
         int dw = fontinfo.max_width;
-        int dx = fontinfo.baseline_x - face->glyph->bitmap_left;
+        int dx = fontinfo.baseline_x + face->glyph->bitmap_left;
         int dy = fontinfo.baseline_y - face->glyph->bitmap_top;
         
         for (int y = 0; y < face->glyph->bitmap.rows; y++)
