@@ -318,7 +318,7 @@ std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile,
     DictTreeNode* tree = construct_tree(sorted_dict, allocator);
     
     // Encode the dictionary entries, using either RLE or reference method.
-    for (DataFile::dictentry_t d : sorted_dict)
+    for (const DataFile::dictentry_t &d : sorted_dict)
     {
         if (d.replacement.size() == 0)
         {
@@ -335,7 +335,7 @@ std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile,
     }
     
     // Then reference-encode the glyphs
-    for (DataFile::glyphentry_t g : datafile.GetGlyphTable())
+    for (const DataFile::glyphentry_t &g : datafile.GetGlyphTable())
     {
         result->glyphs.push_back(encode_ref(g.data, tree, true));
     }

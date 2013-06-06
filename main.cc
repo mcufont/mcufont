@@ -6,6 +6,7 @@
 #include "optimize.hh"
 #include <vector>
 #include <string>
+#include <set>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
@@ -31,6 +32,7 @@ static const char *usage_msg =
     "   import <ttffile>                Import a .ttf font into a data file.\n"
     "   import_bdf <bdffile>            Import a .bdf font into a data file.\n"
     "   export <datfile> <basename>     Export to .c and .h source code.\n"
+    "   filter <datfile> <range> ...    Remove everything except specified characters.\n"
     "   size <datfile>                  Check the encoded size of the data file.\n"
     "   optimize <datfile>              Perform an optimization pass on the data file.\n"
     "   show_encoded <datfile>          Show the encoded data for debugging.\n"
@@ -116,6 +118,73 @@ int main(int argc, char **argv)
             std::cout << "Wrote " << dst << ".c" << std::endl;
         }
         
+        return 0;
+    }
+    else if (args.size() >= 3 && args.at(0) == "filter")
+    {
+        std::set<int> allowed;
+        
+        // Parse arguments
+        for (size_t i = 2; i < args.size(); i++)
+        {
+            std::string s = args.at(i);
+            size_t pos = s.find('-');
+            if (pos == std::string::npos)
+            {
+                // Single char
+                allowed.insert(std::stoi(s, nullptr, 0));
+            }
+            else
+            {
+                // Range
+                int start = std::stoi(s.substr(0, pos), nullptr, 0);
+                int end = std::stoi(s.substr(pos + 1), nullptr, 0);
+                
+                for (int j = start; j < end; j++)
+                {
+                    allowed.insert(j);
+                }
+            }
+        }
+        
+        std::string src = args.at(1);
+        std::ifstream infile(src);
+        
+        if (!infile.good())
+        {
+            std::cerr << "Could not open " << src << std::endl;
+            return 1;
+        }
+        
+        std::unique_ptr<DataFile> f = DataFile::Load(infile);
+        
+        std::cout << "Font originally had " << f->GetGlyphCount() << " glyphs." << std::endl;
+        
+        // Filter the glyphs
+        std::vector<DataFile::glyphentry_t> newglyphs;
+        for (size_t i = 0; i < f->GetGlyphCount(); i++)
+        {
+            DataFile::glyphentry_t g = f->GetGlyphEntry(i);
+            
+            for (size_t j = 0; j < g.chars.size(); j++)
+            {
+                if (!allowed.count(g.chars.at(j)))
+                {
+                    g.chars.erase(g.chars.begin() + j);
+                    j--;
+                }
+            }
+            
+            if (g.chars.size())
+            {
+                newglyphs.push_back(g);
+            }
+        }
+        
+        f.reset(new DataFile(f->GetDictionary(), newglyphs, f->GetFontInfo()));
+        std::cout << "After filtering, " << f->GetGlyphCount() << " glyphs remain." << std::endl;
+        std::ofstream outfile(src);
+        f->Save(outfile);
         return 0;
     }
     else if (args.size() == 2 && args.at(0) == "size")
