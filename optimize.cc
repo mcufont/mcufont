@@ -313,6 +313,9 @@ void init_dictionary(DataFile &datafile)
 {
     rnd_t rnd(datafile.GetSeed());
     
+    if (datafile.GetGlyphCount() == 0)
+        return;
+    
     std::set<DataFile::pixels_t> seen_substrings;
     std::set<DataFile::pixels_t> added_substrings;
     

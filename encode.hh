@@ -101,12 +101,12 @@ private:
         "MaxHeight 6\n"
         "BaselineX 1\n"
         "BaselineY 1\n"
-        "DictEntry 1 0 0101\n"
+        "DictEntry 1 0 0F0F\n"
         "DictEntry 1 0 0000\n"
-        "DictEntry 1 0 1111\n"
-        "DictEntry 1 1 01010101\n"
-        "Glyph 1 4 010101010101010101010101\n"
-        "Glyph 2 4 010100000000000000000001\n"
-        "Glyph 3 4 000011110001110000111100\n";
+        "DictEntry 1 0 FFFF\n"
+        "DictEntry 1 1 0F0F0F0F\n"
+        "Glyph 1 4 0F0F0F0F0F0F0F0F0F0F0F0F\n"
+        "Glyph 2 4 0F0F0000000000000000000F\n"
+        "Glyph 3 4 0000FFFF000FFF0000FFFF00\n";
 };
 #endif

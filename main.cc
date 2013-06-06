@@ -1,8 +1,9 @@
 #include "bdf_import.hh"
+#include "c_export.hh"
 #include "datafile.hh"
 #include "encode.hh"
+#include "freetype_import.hh"
 #include "optimize.hh"
-#include "c_export.hh"
 #include <vector>
 #include <string>
 #include <fstream>
@@ -27,7 +28,8 @@ static std::string strip_extension(std::string filename)
 
 static const char *usage_msg =
     "Usage:\n"
-    "   import <bdffile>                Import a .bdf font into a data file.\n"
+    "   import <ttffile>                Import a .ttf font into a data file.\n"
+    "   import_bdf <bdffile>            Import a .bdf font into a data file.\n"
     "   export <datfile> <basename>     Export to .c and .h source code.\n"
     "   size <datfile>                  Check the encoded size of the data file.\n"
     "   optimize <datfile>              Perform an optimization pass on the data file.\n"
@@ -41,6 +43,30 @@ int main(int argc, char **argv)
         args.push_back(argv[i]);
     
     if (args.size() == 2 && args.at(0) == "import")
+    {
+        std::string src = args.at(1);
+        std::string dest = strip_extension(args.at(1)) + ".dat";
+        std::ifstream infile(src);
+        
+        if (!infile.good())
+        {
+            std::cerr << "Could not open " << src << std::endl;
+            return 1;
+        }
+        
+        std::cout << "Importing " << src << " to " << dest << std::endl;
+        
+        std::unique_ptr<DataFile> f = LoadFreetype(infile);
+        
+        init_dictionary(*f);
+        
+        std::ofstream outfile(dest);
+        f->Save(outfile);
+        
+        std::cout << "Done: " << f->GetGlyphCount() << " unique glyphs." << std::endl;
+        return 0;
+    }
+    else if (args.size() == 2 && args.at(0) == "import_bdf")
     {
         std::string src = args.at(1);
         std::string dest = strip_extension(args.at(1)) + ".dat";

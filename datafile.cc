@@ -2,6 +2,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cctype>
+#include <stdexcept>
 
 DataFile::DataFile(const std::vector<dictentry_t> &dictionary,
                    const std::vector<glyphentry_t> &glyphs,
@@ -97,6 +98,9 @@ std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
             std::string chars;
             input >> chars >> g.width >> g.data;
             
+            if ((int)g.data.size() != fontinfo.max_width * fontinfo.max_height)
+                throw std::runtime_error("wrong glyph data length: " + std::to_string(g.data.size()));
+            
             size_t pos = 0;
             while (pos < chars.size()) {
                 size_t p;
@@ -128,12 +132,14 @@ std::string DataFile::GlyphToText(size_t index) const
 {
     std::ostringstream os;
     
+    const char glyphchars[] = "....,,,,----XXXX";
+    
     for (int y = 0; y < m_fontinfo.max_height; y++)
     {
         for (int x = 0; x < m_fontinfo.max_width; x++)
         {
             size_t pos = y * m_fontinfo.max_width + x;
-            os << (m_glyphtable.at(index).data.at(pos) ? "X" : ".");
+            os << glyphchars[m_glyphtable.at(index).data.at(pos)];
         }
         os << std::endl;
     }
@@ -159,7 +165,12 @@ std::ostream& operator<<(std::ostream& os, const DataFile::pixels_t& str)
 {
     for (uint8_t p: str)
     {
-        os << (p ? '1' : '0');
+        if (p <= 9)
+            os << (char)(p + '0');
+        else if (p <= 15)
+            os << (char)(p - 10 + 'A');
+        else
+            throw std::logic_error("invalid pixel alpha: " + std::to_string(p));
     }
     return os;
 }
@@ -173,10 +184,10 @@ std::istream& operator>>(std::istream& is, DataFile::pixels_t& str)
     
     while (is.get(c))
     {
-        if (c == '0')
-            str.push_back(0);
-        else if (c == '1')
-            str.push_back(15);
+        if (c >= '0' && c <= '9')
+            str.push_back(c - '0');
+        else if (c >= 'A' && c <= 'F')
+            str.push_back(c - 'A' + 10);
         else
             break;
     }
