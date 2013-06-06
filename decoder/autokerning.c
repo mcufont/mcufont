@@ -1,8 +1,13 @@
 #include "autokerning.h"
 
-/* Space between characters, percent of font width. */
-#ifndef KERNING_SPACE
-#define KERNING_SPACE 20
+/* Space between characters, percent of glyph width. */
+#ifndef KERNING_SPACE_PERCENT
+#define KERNING_SPACE_PERCENT 30
+#endif
+
+/* Space between characters, pixels. */
+#ifndef KERNING_SPACE_PX
+#define KERNING_SPACE_PX 3
 #endif
 
 /* Maximum kerning adjustment, percent of glyph width. */
@@ -32,7 +37,7 @@ static void fit_leftedge(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
 {
     struct kerning_state_s *s = state;
     
-    if (alpha > 0 && y > s->prev_y)
+    if (alpha > 7 && y > s->prev_y)
     {
         /* First active pixel on a new row, add to sums. */
         s->count++;
@@ -68,7 +73,7 @@ static void fit_rightedge(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
         s->prev_y = y;
     }
     
-    if (alpha > 0)
+    if (alpha > 7)
     {
         s->prev_x = x + count;
         if (y < s->min_y) s->min_y = y;
@@ -107,7 +112,7 @@ int8_t compute_kerning(const struct rlefont_s *font, uint16_t c1, uint16_t c2)
     w1 = render_character(font, 0, 0, c1, fit_rightedge, &rightedge);
     w2 = render_character(font, 0, 0, c2, fit_leftedge, &leftedge);
     
-    /* Never kern for empty glyphs, dashes etc. */
+    /* Can't kern for empty glyphs, single-row dashes etc. */
     if (leftedge.count <= 1 || rightedge.count <= 1)
         return 0;
     
@@ -120,10 +125,10 @@ int8_t compute_kerning(const struct rlefont_s *font, uint16_t c1, uint16_t c2)
     get_marginpos(&leftedge, y0, y1, &e2t, &e2b);
     
     /* Compute the amount of space available at top & bottom of the glyph. */
-    normal_space = (font->width * KERNING_SPACE + 99) / 100;
+    normal_space = avg16(w1, w2) * KERNING_SPACE_PERCENT / 100 + KERNING_SPACE_PX;
     min_space = min16(w1 - e1t + e2t, w1 - e1b + e2b);
     adjust = normal_space - min_space;
-    max_adjust = -max16(w1, w2) * KERNING_SPACE / 100;
+    max_adjust = -max16(w1, w2) * KERNING_MAX / 100;
     
     if (adjust > 0) adjust = 0;
     if (adjust < max_adjust) adjust = max_adjust;
