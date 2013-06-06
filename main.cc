@@ -272,7 +272,7 @@ int main(int argc, char **argv)
         int i = 0;
         for (encoded_font_t::rlestring_t d : e->rle_dictionary)
         {
-            std::cout << "Dict RLE " << 4 + i++ << ": ";
+            std::cout << "Dict RLE " << 24 + i++ << ": ";
             for (uint8_t v : d)
                 std::cout << std::setfill('0') << std::setw(2) << std::hex << (int)v << " ";
             std::cout << std::endl;
@@ -280,7 +280,7 @@ int main(int argc, char **argv)
         
         for (encoded_font_t::refstring_t d : e->ref_dictionary)
         {
-            std::cout << "Dict Ref " << 4 + i++ << ": ";
+            std::cout << "Dict Ref " << 24 + i++ << ": ";
             for (uint8_t v : d)
                 std::cout << std::setfill('0') << std::setw(2) << std::hex << (int)v << " ";
             std::cout << std::endl;

@@ -348,7 +348,13 @@ std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile,
             std::unique_ptr<DataFile::pixels_t> decoded = 
                 decode_glyph(*result, i, datafile.GetFontInfo());
             if (*decoded != datafile.GetGlyphEntry(i).data)
-                throw std::logic_error("verification of glyph " + std::to_string(i) + " failed");
+            {
+                auto iter = std::mismatch(decoded->begin(), decoded->end(),
+                                          datafile.GetGlyphEntry(i).data.begin());
+                size_t pos = iter.first - decoded->begin();
+                throw std::logic_error("verification of glyph " + std::to_string(i) +
+                    " failed at position " + std::to_string(pos));
+            }
         }
     }
     
@@ -425,6 +431,16 @@ std::unique_ptr<DataFile::pixels_t> decode_glyph(
                     for (int i = 0; i < (rle & RLE_VALMASK) + 1; i++)
                     {
                         result->push_back(15);
+                    }
+                }
+                else if ((rle & RLE_CODEMASK) == RLE_SHADE)
+                {
+                    uint8_t count, alpha;
+                    count = ((rle & RLE_VALMASK) >> 4) + 1;
+                    alpha = ((rle & RLE_VALMASK) & 0xF);
+                    for (int i = 0; i < count; i++)
+                    {
+                        result->push_back(alpha);
                     }
                 }
             }

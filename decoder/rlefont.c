@@ -101,8 +101,8 @@ static void write_rle_dictentry(const struct rlefont_s *font,
         else if ((code & RLE_CODEMASK) == RLE_SHADE)
         {
             uint8_t count, alpha;
-            count = (code & RLE_VALMASK) >> 4;
-            alpha = ((code & RLE_VALMASK) >> 4) * 0x11;
+            count = ((code & RLE_VALMASK) >> 4) + 1;
+            alpha = ((code & RLE_VALMASK) & 0xF) * 0x11;
             write_pixels(rstate, count, alpha);
         }
     }
