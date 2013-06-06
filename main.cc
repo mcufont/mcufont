@@ -1,4 +1,4 @@
-#include "bdffont.hh"
+#include "bdf_import.hh"
 #include "datafile.hh"
 #include "encode.hh"
 #include "optimize.hh"
