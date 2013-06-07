@@ -2,7 +2,7 @@
 
 /* Space between characters, percent of glyph width. */
 #ifndef KERNING_SPACE_PERCENT
-#define KERNING_SPACE_PERCENT 30
+#define KERNING_SPACE_PERCENT 15
 #endif
 
 /* Space between characters, pixels. */
@@ -15,85 +15,45 @@
 #define KERNING_MAX 20
 #endif
 
-/* Structure for keeping track of the edge of the glyph as it is rendered.
- * Performs an online least-squares linear regression on the glyph edge.
- */
+/* Number of kerning zones to divide the glyph height into. */
+#ifndef KERNING_ZONES
+#define KERNING_ZONES 16
+#endif
+
+/* Structure for keeping track of the edge of the glyph as it is rendered. */
 struct kerning_state_s
 {
-    int16_t min_y;
-    int16_t max_y;
-    int16_t prev_y; /* Only for right edge */
-    int16_t prev_x;
-    uint8_t count;
-    int32_t sum_x;
-    int32_t sum_y;
-    int32_t sum_xy;
-    int32_t sum_yy;
+    uint8_t edgepos[KERNING_ZONES];
+    uint8_t zoneheight;
 };
 
-/* Pixel callback for fitting the left edge of a glyph. */
+/* Pixel callback for analyzing the left edge of a glyph. */
 static void fit_leftedge(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
                          void *state)
 {
     struct kerning_state_s *s = state;
     
-    if (alpha > 7 && y > s->prev_y)
+    if (alpha > 7)
     {
-        /* First active pixel on a new row, add to sums. */
-        s->count++;
-        s->sum_x += x;
-        s->sum_y += y;
-        s->sum_xy += x * y;
-        s->sum_yy += y * y;
-        s->prev_y = y;
-        
-        if (y < s->min_y) s->min_y = y;
-        if (y > s->max_y) s->max_y = y;
+        uint8_t zone = y / s->zoneheight;
+        if (x < s->edgepos[zone])
+            s->edgepos[zone] = x;
     }
 }
 
-/* Pixel callback for fitting the right edge of a glyph. */
+/* Pixel callback for analyzing the right edge of a glyph. */
 static void fit_rightedge(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
                          void *state)
 {
     struct kerning_state_s *s = state;
     
-    if (y > s->prev_y)
-    {
-        /* New row begins, add the last active pixel of the previous row. */
-        if (s->prev_x > 0)
-        {
-            s->count++;
-            s->sum_x += s->prev_x;
-            s->sum_y += s->prev_y;
-            s->sum_xy += s->prev_x * s->prev_y;
-            s->sum_yy += s->prev_y * s->prev_y;
-        }
-        s->prev_x = -1;
-        s->prev_y = y;
-    }
-    
     if (alpha > 7)
     {
-        s->prev_x = x + count;
-        if (y < s->min_y) s->min_y = y;
-        if (y > s->max_y) s->max_y = y;
+        uint8_t zone = y / s->zoneheight;
+        x += count - 1;
+        if (x > s->edgepos[zone])
+            s->edgepos[zone] = x;
     }
-}
-
-/* Using linear regression, compute the points where a line fitted to the
- * glyph edge would intercept the top and bottom of the glyph area. */
-static void get_marginpos(struct kerning_state_s *s, uint8_t y0, uint8_t y1,
-                          int16_t *top, int16_t *bottom)
-{
-    int32_t divisor, a, b;
-    divisor = s->sum_yy - s->sum_y * s->sum_y / s->count;
-    
-    a = (s->sum_yy / s->count * s->sum_x - s->sum_xy / s->count * s->sum_y) / divisor;
-    b = (s->sum_xy - s->sum_x * s->sum_y / s->count) * 256 / divisor;
-    
-    *top = a + b * y0 / 256;
-    *bottom = a + b * y1 / 256;
 }
 
 static int16_t min16(int16_t a, int16_t b) { return (a < b) ? a : b; }
@@ -102,31 +62,40 @@ static int16_t avg16(int16_t a, int16_t b) { return (a + b) / 2; }
 
 int8_t compute_kerning(const struct rlefont_s *font, uint16_t c1, uint16_t c2)
 {
-    struct kerning_state_s leftedge = {255, 0, -1, -1, 0, 0, 0, 0, 0};
-    struct kerning_state_s rightedge = {255, 0, -1, -1, 0, 0, 0, 0, 0};
-    uint8_t w1, w2;
-    int16_t y0, y1, e1t, e1b, e2t, e2b;
-    int16_t normal_space, min_space, adjust, max_adjust;
+    struct kerning_state_s leftedge, rightedge;
+    uint8_t w1, w2, i, min_space;
+    int16_t normal_space, adjust, max_adjust;
     
-    /* Find the edges of both glyphs. */
+    /* Initialize structures */
+    leftedge.zoneheight = rightedge.zoneheight = font->height / KERNING_ZONES;
+    for (i = 0; i < KERNING_ZONES; i++)
+    {
+        leftedge.edgepos[i] = 255;
+        rightedge.edgepos[i] = 0;
+    }
+    
+    /* Analyze the edges of both glyphs. */
     w1 = render_character(font, 0, 0, c1, fit_rightedge, &rightedge);
     w2 = render_character(font, 0, 0, c2, fit_leftedge, &leftedge);
     
-    /* Can't kern for empty glyphs, single-row dashes etc. */
-    if (leftedge.count <= 1 || rightedge.count <= 1)
-        return 0;
+    /* Find the minimum horizontal space between the glyphs. */
+    min_space = 255;
+    for (i = 0; i < KERNING_ZONES; i++)
+    {
+        uint8_t space;
+        if (leftedge.edgepos[i] == 255 || rightedge.edgepos[i] == 0)
+            continue; /* Outside glyph area. */
+        
+        space = w1 - rightedge.edgepos[i] + leftedge.edgepos[i];
+        if (space < min_space)
+            min_space = space;
+    }
     
-    /* Consider the area that is average of the two glyphs. */
-    y0 = avg16(rightedge.min_y, leftedge.min_y);
-    y1 = avg16(rightedge.max_y, leftedge.max_y);
+    if (min_space == 255)
+        return 0; /* One of the characters is space, or both are punctuation. */
     
-    /* Find the intersection points of the edges. */
-    get_marginpos(&rightedge, y0, y1, &e1t, &e1b);
-    get_marginpos(&leftedge, y0, y1, &e2t, &e2b);
-    
-    /* Compute the amount of space available at top & bottom of the glyph. */
+    /* Compute the adjustment of the glyph position. */
     normal_space = avg16(w1, w2) * KERNING_SPACE_PERCENT / 100 + KERNING_SPACE_PX;
-    min_space = min16(w1 - e1t + e2t, w1 - e1b + e2b);
     adjust = normal_space - min_space;
     max_adjust = -max16(w1, w2) * KERNING_MAX / 100;
     
