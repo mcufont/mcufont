@@ -5,6 +5,7 @@
 #include "fonts.h"
 #include "mini_utf8.h"
 #include "autokerning.h"
+#include "wordwrap.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -70,6 +71,8 @@ typedef struct {
     uint8_t *buffer;
     uint16_t width;
     uint16_t height;
+    uint16_t y;
+    const struct rlefont_s *font;
 } state_t;
 
 /* Callback to write to a memory buffer. */
@@ -91,13 +94,41 @@ void pixel_callback(int16_t x, int16_t y, uint8_t count, uint8_t alpha, void *st
     }
 }
 
+/* Callback to render lines. */
+bool line_callback(const char *line, uint16_t length, void *state)
+{
+    state_t *s = (state_t*)state;
+    int x;
+    uint16_t c1 = 0, c2;
+    
+    x = - s->font->baseline_x;
+    while (length--)
+    {
+        c2 = utf8_getchar(&line);
+        if (c1 != 0)
+            x += compute_kerning(s->font, c1, c2);
+        x += render_character(s->font, x, s->y, c2, pixel_callback, state);
+        c1 = c2;
+    }
+    
+    s->y += s->font->height;
+    return true;
+}
+
+/* Callback to just count the lines. */
+bool count_lines(const char *line, uint16_t length, void *state)
+{
+    int *count = (int*)state;
+    (*count)++;
+    return true;
+}
+
 int main(int argc, char **argv)
 {
     const char *filename, *string;
-    int width = 0, height = 0, x;
-    const char *p;
-    uint16_t c1, c2;
+    int width = 640, height;
     const struct rlefont_s *font;
+    state_t state = {};
     
     if (argc != 4)
     {
@@ -116,36 +147,20 @@ int main(int argc, char **argv)
     filename = argv[2];
     string = argv[3];
     
-    /* Figure out the width of the string */
-    p = string;
-    while (*p)
-    {
-        width += character_width(font, utf8_getchar(&p));
-    }
-    
-    while (width % 4 != 0) width++;
-    height = font->height;
-    
-    printf("Bitmap size: %d x %d\n", width, height);
+    /* Count the number of lines that we need. */
+    height = 0;
+    wordwrap(font, width, string, count_lines, &height);
+    height *= font->height;
     
     /* Allocate and clear the image buffer */
-    state_t state;
     state.width = width;
     state.height = height;
     state.buffer = calloc(width * height, 1);
+    state.y = 0;
+    state.font = font;
     
     /* Render the text */
-    p = string;
-    x = - font->baseline_x;
-    c1 = 0;
-    while (*p)
-    {
-        c2 = utf8_getchar(&p);
-        if (c1 != 0)
-            x += compute_kerning(font, c1, c2);
-        x += render_character(font, x, 0, c2, pixel_callback, &state);
-        c1 = c2;
-    }
+    wordwrap(font, width, string, line_callback, &state);
     
     /* Write out the bitmap */
     write_bmp(filename, state.buffer, width, height);

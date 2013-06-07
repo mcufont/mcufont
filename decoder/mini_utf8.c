@@ -2,14 +2,19 @@
 
 uint16_t utf8_getchar(const char **str)
 {
-    uint8_t c = **str;
+    uint8_t c;
     uint8_t tmp, seqlen;
     uint16_t result;
+    
+    c = **str;
+    if (!c)
+        return 0;
+    
     (*str)++;
     
     if ((c & 0x80) == 0)
     {
-        /* Just normal ASCII character, or maybe the null byte. */
+        /* Just normal ASCII character. */
         return c;
     }
     else if ((c & 0xC0) == 0x80)
