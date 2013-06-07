@@ -12,8 +12,13 @@
  * str: Pointer to variable holding current location in string.
  *      Initialize it to the start of the string.
  * 
- * Returns: The next character, encoded as UTF-16.
+ * Returns: The next character, encoded as UCS-2.
  */
 uint16_t utf8_getchar(const char **str);
+
+/* Moves back the pointer to the beginning of the previous character.
+ * Be careful not to go beyond the start of the string.
+ */
+void utf8_rewind(const char **str);
 
 #endif

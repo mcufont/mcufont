@@ -1,5 +1,7 @@
 #include "mini_utf8.h"
 
+#ifndef NO_UTF8
+
 uint16_t utf8_getchar(const char **str)
 {
     uint8_t c;
@@ -24,7 +26,7 @@ uint16_t utf8_getchar(const char **str)
          */
         return c;
     }
-    else if ((**str & 0xC0) != 0x80)
+    else if ((**str & 0xC0) == 0xC0)
     {
         /* Start of multibyte sequence without any following bytes.
          * Silly. Maybe you are using the wrong encoding.
@@ -55,3 +57,29 @@ uint16_t utf8_getchar(const char **str)
         return result;
     }
 }
+
+void utf8_rewind(const char **str)
+{
+    (*str)--;
+    
+    while ((**str & 0x80) != 0x00 && (**str & 0xC0) != 0xC0)
+        (*str)--;
+}
+
+#else
+
+/* This is 8-bit alternative if you don't need UTF-8. */
+static uint16_t utf8_getchar(const char **str)
+{
+    if (**str)
+        return *(*str++);
+    else
+        return 0;
+}
+
+void utf8_rewind(const char **str)
+{
+    (*str)--;
+}
+
+#endif

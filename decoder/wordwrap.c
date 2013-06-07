@@ -1,30 +1,6 @@
 #include "wordwrap.h"
 #include <stdbool.h>
 
-/* We can either use plain 8-bit coding or UTF-8. */
-#ifdef WORDWRAP_NO_UTF8
-static uint16_t utf8_getchar(const char **str)
-{
-    if (**str)
-        return *(*str++);
-    else
-        return 0;
-}
-#else
-#include "mini_utf8.h"
-#endif
-
-/* The spacing of tab stops, defined by the width of the space character. */
-#ifndef TABSIZE
-#define TABSIZE 8
-#endif
-
-/* To avoid dependency on ctype.h */
-static bool _isspace(uint16_t c)
-{
-    return c == ' ' || c == '\n' || c == '\t' || c == '\r';
-}
-
 /* Represents a single word and the whitespace after it. */
 struct wordlen_s
 {

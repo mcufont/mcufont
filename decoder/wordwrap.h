@@ -6,17 +6,19 @@
 #define _WORDWRAP_H_
 
 #include "rlefont.h"
+#include "fontutils.h"
+#include "mini_utf8.h"
 #include <stdbool.h>
 
 /* Callback function for handling each line.
  *
  * begin:   Pointer to the beginning of the string for this line.
- * length:  Number of characters on the line.
+ * count:  Number of characters on the line.
  * state:   Free variable that was passed to wordwrap().
  * 
  * Returns: true to continue, false to stop after this line.
  */
-typedef bool (*line_callback_t) (const char *line, uint16_t length,
+typedef bool (*line_callback_t) (const char *line, uint16_t count,
                                  void *state);
 
 /* Word wrap a piece of text. Calls the callback function for each line.

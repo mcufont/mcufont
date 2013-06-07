@@ -6,6 +6,7 @@
 #include "mini_utf8.h"
 #include "autokerning.h"
 #include "wordwrap.h"
+#include "justify.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -95,31 +96,20 @@ void pixel_callback(int16_t x, int16_t y, uint8_t count, uint8_t alpha, void *st
 }
 
 /* Callback to render lines. */
-bool line_callback(const char *line, uint16_t length, void *state)
+bool line_callback(const char *line, uint16_t count, void *state)
 {
     state_t *s = (state_t*)state;
-    int x;
-    uint16_t c1 = 0, c2;
-    
-    x = - s->font->baseline_x;
-    while (length--)
-    {
-        c2 = utf8_getchar(&line);
-        if (c1 != 0)
-            x += compute_kerning(s->font, c1, c2);
-        x += render_character(s->font, x, s->y, c2, pixel_callback, state);
-        c1 = c2;
-    }
-    
+    render_aligned(s->font, 0, s->y, ALIGN_LEFT,
+                   line, count, pixel_callback, state);
     s->y += s->font->height;
     return true;
 }
 
 /* Callback to just count the lines. */
-bool count_lines(const char *line, uint16_t length, void *state)
+bool count_lines(const char *line, uint16_t count, void *state)
 {
-    int *count = (int*)state;
-    (*count)++;
+    int *linecount = (int*)state;
+    (*linecount)++;
     return true;
 }
 
