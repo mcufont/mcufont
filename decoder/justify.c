@@ -184,7 +184,8 @@ void render_justified(const struct rlefont_s *font, int16_t x0, int16_t y0,
             {
                 tmp = x;
                 x = round_to_tab(font, x0, x);
-                adjustment -= x - tmp;
+                adjustment -= x - tmp - character_width(font, '\t');
+                num_spaces--;
                 c1 = c2;
                 continue;
             }
