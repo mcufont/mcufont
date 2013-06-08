@@ -67,7 +67,8 @@ int8_t compute_kerning(const struct rlefont_s *font, uint16_t c1, uint16_t c2)
     int16_t normal_space, adjust, max_adjust;
     
     /* Initialize structures */
-    leftedge.zoneheight = rightedge.zoneheight = font->height / KERNING_ZONES;
+    i = max16(font->height / KERNING_ZONES, 1);
+    leftedge.zoneheight = rightedge.zoneheight = i;
     for (i = 0; i < KERNING_ZONES; i++)
     {
         leftedge.edgepos[i] = 255;

@@ -208,7 +208,7 @@ static uint8_t strequals(const char *a, const char *b)
         if (*a++ != *b++)
             return 0;
     }
-    return 1;
+    return (!*b);
 }
 
 const struct rlefont_s *find_font(const char *name,

@@ -139,7 +139,7 @@ int main(int argc, char **argv)
     
     /* Count the number of lines that we need. */
     height = 0;
-    wordwrap(font, width, string, count_lines, &height);
+    wordwrap(font, width - 4, string, count_lines, &height);
     height *= font->height;
     height += 4;
     
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
     state.font = font;
     
     /* Render the text */
-    wordwrap(font, width, string, line_callback, &state);
+    wordwrap(font, width - 4, string, line_callback, &state);
     
     /* Write out the bitmap */
     write_bmp(filename, state.buffer, width, height);
