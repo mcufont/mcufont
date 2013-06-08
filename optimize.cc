@@ -31,10 +31,13 @@ std::unique_ptr<DataFile::pixels_t> random_substring(const DataFile &datafile, r
 // Try to replace the worst dictionary entry with a better one.
 void optimize_worst(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
 {
+    std::uniform_int_distribution<size_t> dist(0, 1);
+    
     DataFile trial = datafile;
     size_t worst = trial.GetLowScoreIndex();
     DataFile::dictentry_t d = trial.GetDictionaryEntry(worst);
     d.replacement = *random_substring(datafile, rnd);
+    d.ref_encode = dist(rnd);
     trial.SetDictionaryEntry(worst, d);
     
     size_t newsize = get_encoded_size(trial);
