@@ -80,15 +80,20 @@ static void render_left(const struct rlefont_s *font, int16_t x0, int16_t y0,
     while (count--)
     {
         c2 = utf8_getchar(&text);
+        
+        if (c2 == '\t')
+        {
+            x = round_to_tab(font, x0, x);
+            c1 = c2;
+            continue;
+        }
+        
 #ifndef NO_KERNING
         if (c1 != 0)
             x += compute_kerning(font, c1, c2);
 #endif
         x += render_character(font, x, y0, c2, callback, state);
         c1 = c2;
-        
-        if (c2 == '\t')
-            x = round_to_tab(font, x0, x);
     }
 }
 
@@ -175,6 +180,15 @@ void render_justified(const struct rlefont_s *font, int16_t x0, int16_t y0,
         {
             c2 = utf8_getchar(&text);
             
+            if (c2 == '\t')
+            {
+                tmp = x;
+                x = round_to_tab(font, x0, x);
+                adjustment -= x - tmp;
+                c1 = c2;
+                continue;
+            }
+            
             if (_isspace(c2))
             {
                 tmp = (adjustment + num_spaces / 2) / num_spaces;
@@ -193,13 +207,6 @@ void render_justified(const struct rlefont_s *font, int16_t x0, int16_t y0,
 #endif
             x += render_character(font, x, y0, c2, callback, state);
             c1 = c2;
-            
-            if (c2 == '\t')
-            {
-                tmp = x;
-                x = round_to_tab(font, x0, x);
-                adjustment -= x - tmp;
-            }
         }
     }
 }
