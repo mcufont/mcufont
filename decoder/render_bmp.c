@@ -55,7 +55,7 @@ static void write_bmp(const char *filename, const uint8_t *data,
     for (i = 0; i < 256; i++)
     {
         uint8_t buf[3];
-        buf[0] = buf[1] = buf[2] = i;
+        buf[0] = buf[1] = buf[2] = 255 - i;
         fwrite(buf, 3, 1, f);
     }
     
@@ -99,7 +99,7 @@ void pixel_callback(int16_t x, int16_t y, uint8_t count, uint8_t alpha, void *st
 bool line_callback(const char *line, uint16_t count, void *state)
 {
     state_t *s = (state_t*)state;
-    render_aligned(s->font, 0, s->y, ALIGN_LEFT,
+    render_justified(s->font, 2, s->y, s->width - 4,
                    line, count, pixel_callback, state);
     s->y += s->font->height;
     return true;
@@ -141,12 +141,13 @@ int main(int argc, char **argv)
     height = 0;
     wordwrap(font, width, string, count_lines, &height);
     height *= font->height;
+    height += 4;
     
     /* Allocate and clear the image buffer */
     state.width = width;
     state.height = height;
     state.buffer = calloc(width * height, 1);
-    state.y = 0;
+    state.y = 2;
     state.font = font;
     
     /* Render the text */

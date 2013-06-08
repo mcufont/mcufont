@@ -39,6 +39,20 @@ void render_aligned(const struct rlefont_s *font, int16_t x0, int16_t y0,
                     enum align_t align, const char *text, uint16_t count,
                     pixel_callback_t callback, void *state);
 
+/* Render a single line of justified text.
+ *
+ * font:     Pointer to the font definition.
+ * x0:       Left edge of the target area.
+ * y0:       Upper edge of the target area.
+ * width:    Width of the target area.
+ * text:     Pointer to start of the text to render.
+ * count:    Number of characters on the line or 0 to read until end of string.
+ * callback: Callback to pass to render_character().
+ * state:    Free variable for use in the callback.
+ */
+void render_justified(const struct rlefont_s *font, int16_t x0, int16_t y0,
+                      int16_t width, const char *text, uint16_t count,
+                      pixel_callback_t callback, void *state);
 
 
 #endif

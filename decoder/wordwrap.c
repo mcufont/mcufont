@@ -37,7 +37,7 @@ static bool get_wordlen(const struct rlefont_s *font, const char **text,
         if (c == ' ')
             result->space += character_width(font, c);
         else if (c == '\t')
-            result->space += character_width(font, c) * TABSIZE;
+            result->space += character_width(font, ' ') * TABSIZE;
         else if (c == '\n')
             break;
         
