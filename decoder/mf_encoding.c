@@ -1,8 +1,8 @@
-#include "mini_utf8.h"
+#include "mf_encoding.h"
 
-#ifndef NO_UTF8
+#if MF_ENCODING == MF_ENCODING_UTF8
 
-uint16_t utf8_getchar(const char **str)
+mf_char mf_getchar(mf_str *str)
 {
     uint8_t c;
     uint8_t tmp, seqlen;
@@ -58,28 +58,12 @@ uint16_t utf8_getchar(const char **str)
     }
 }
 
-void utf8_rewind(const char **str)
+void mf_rewind(mf_str *str)
 {
     (*str)--;
     
     while ((**str & 0x80) != 0x00 && (**str & 0xC0) != 0xC0)
         (*str)--;
-}
-
-#else
-
-/* This is 8-bit alternative if you don't need UTF-8. */
-static uint16_t utf8_getchar(const char **str)
-{
-    if (**str)
-        return *(*str++);
-    else
-        return 0;
-}
-
-void utf8_rewind(const char **str)
-{
-    (*str)--;
 }
 
 #endif

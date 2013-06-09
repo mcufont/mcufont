@@ -1,17 +1,18 @@
 /* Text alignment and justification algorithm. Supports left, right, center
- * and justify. Supports tab stops and optionally uses kerning. */
+ * alignment and justify. Supports tab stops and kerning.
+ */
 
-#ifndef _JUSTIFY_H_
-#define _JUSTIFY_H_
+#ifndef _MF_JUSTIFY_H_
+#define _MF_JUSTIFY_H_
 
-#include "rlefont.h"
+#include "mf_rlefont.h"
 #include <stdbool.h>
 
-enum align_t
+enum mf_align_t
 {
-    ALIGN_LEFT = 0,
-    ALIGN_CENTER,
-    ALIGN_RIGHT
+    MF_ALIGN_LEFT = 0,
+    MF_ALIGN_CENTER,
+    MF_ALIGN_RIGHT
 };
 
 /* Get width of a string in pixels.
@@ -21,8 +22,8 @@ enum align_t
  * count:  Number of characters on the line or 0 to read until end of string.
  * kern:   True to consider kerning (slower).
  */
-int16_t get_string_width(const struct rlefont_s *font, const char *text,
-                         uint16_t count, bool kern);
+MF_EXTERN int16_t mf_get_string_width(const struct mf_rlefont_s *font,
+                                      mf_str text, uint16_t count, bool kern);
 
 /* Render a single line of aligned text.
  *
@@ -35,9 +36,11 @@ int16_t get_string_width(const struct rlefont_s *font, const char *text,
  * callback: Callback to pass to render_character().
  * state:    Free variable for use in the callback.
  */
-void render_aligned(const struct rlefont_s *font, int16_t x0, int16_t y0,
-                    enum align_t align, const char *text, uint16_t count,
-                    pixel_callback_t callback, void *state);
+MF_EXTERN void mf_render_aligned(const struct mf_rlefont_s *font,
+                                 int16_t x0, int16_t y0,
+                                 enum mf_align_t align,
+                                 mf_str text, uint16_t count,
+                                 mf_pixel_callback_t callback, void *state);
 
 /* Render a single line of justified text.
  *
@@ -50,9 +53,10 @@ void render_aligned(const struct rlefont_s *font, int16_t x0, int16_t y0,
  * callback: Callback to pass to render_character().
  * state:    Free variable for use in the callback.
  */
-void render_justified(const struct rlefont_s *font, int16_t x0, int16_t y0,
-                      int16_t width, const char *text, uint16_t count,
-                      pixel_callback_t callback, void *state);
+MF_EXTERN void mf_render_justified(const struct mf_rlefont_s *font,
+                                   int16_t x0, int16_t y0, int16_t width,
+                                   mf_str text, uint16_t count,
+                                   mf_pixel_callback_t callback, void *state);
 
 
 #endif

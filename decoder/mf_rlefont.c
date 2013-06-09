@@ -1,4 +1,4 @@
-#include "rlefont.h"
+#include "mf_rlefont.h"
 
 /* Number of reserved codes before the dictionary entries. */
 #define DICT_START 24
@@ -18,11 +18,11 @@
  * through the character ranges. If the character is not found, return
  * pointer to the default glyph.
  */
-static const uint8_t *find_glyph(const struct rlefont_s *font,
+static const uint8_t *find_glyph(const struct mf_rlefont_s *font,
                                  uint16_t character)
 {
    unsigned i, index;
-   const struct char_range_s *range;
+   const struct mf_char_range_s *range;
    for (i = 0; i < font->char_range_count; i++)
    {
        range = &font->char_ranges[i];
@@ -46,13 +46,14 @@ struct renderstate_r
     int16_t x;
     int16_t y;
     int16_t y_end;
-    pixel_callback_t callback;
+    mf_pixel_callback_t callback;
     void *state;
 };
 
 /* Call the callback to write one pixel to screen, and advance to next
  * pixel position. */
-static void write_pixels(struct renderstate_r *rstate, uint16_t count, uint8_t alpha)
+static void write_pixels(struct renderstate_r *rstate, uint16_t count,
+                         uint8_t alpha)
 {
     uint8_t rowlen;
     
@@ -75,7 +76,7 @@ static void write_pixels(struct renderstate_r *rstate, uint16_t count, uint8_t a
 }
 
 /* Decode and write out a RLE-encoded dictionary entry. */
-static void write_rle_dictentry(const struct rlefont_s *font,
+static void write_rle_dictentry(const struct mf_rlefont_s *font,
                                 struct renderstate_r *rstate,
                                 uint8_t index)
 {
@@ -109,7 +110,7 @@ static void write_rle_dictentry(const struct rlefont_s *font,
 }
 
 /* Decode and write out a reference codeword */
-static void write_ref_codeword(const struct rlefont_s *font,
+static void write_ref_codeword(const struct mf_rlefont_s *font,
                                 struct renderstate_r *rstate,
                                 uint8_t code)
 {
@@ -135,7 +136,7 @@ static void write_ref_codeword(const struct rlefont_s *font,
 }
 
 /* Decode and write out a reference encoded dictionary entry. */
-static void write_ref_dictentry(const struct rlefont_s *font,
+static void write_ref_dictentry(const struct mf_rlefont_s *font,
                                 struct renderstate_r *rstate,
                                 uint8_t index)
 {
@@ -151,7 +152,7 @@ static void write_ref_dictentry(const struct rlefont_s *font,
 }
 
 /* Decode and write out an arbitrary glyph codeword */
-static void write_glyph_codeword(const struct rlefont_s *font,
+static void write_glyph_codeword(const struct mf_rlefont_s *font,
                                 struct renderstate_r *rstate,
                                 uint8_t code)
 {
@@ -166,11 +167,11 @@ static void write_glyph_codeword(const struct rlefont_s *font,
 }
 
 
-uint8_t render_character(const struct rlefont_s *font,
-                         int16_t x0, int16_t y0,
-                         uint16_t character,
-                         pixel_callback_t callback,
-                         void *state)
+uint8_t mf_render_character(const struct mf_rlefont_s *font,
+                            int16_t x0, int16_t y0,
+                            uint16_t character,
+                            mf_pixel_callback_t callback,
+                            void *state)
 {
     const uint8_t *p;
     uint8_t width;
@@ -194,7 +195,7 @@ uint8_t render_character(const struct rlefont_s *font,
     return width;
 }
 
-uint8_t character_width(const struct rlefont_s *font,
+uint8_t mf_character_width(const struct mf_rlefont_s *font,
                            uint16_t character)
 {
     return *find_glyph(font, character);
@@ -211,10 +212,10 @@ static uint8_t strequals(const char *a, const char *b)
     return (!*b);
 }
 
-const struct rlefont_s *find_font(const char *name,
-                                  const struct rlefont_list_s *fonts)
+const struct mf_rlefont_s *mf_find_font(const char *name,
+                                        const struct mf_rlefont_list_s *fonts)
 {
-    const struct rlefont_list_s *f;
+    const struct mf_rlefont_list_s *f;
     f = fonts;
     
     while (f)

@@ -1,12 +1,8 @@
 /* Example application that renders the given (UTF-8 or ASCII) string into
  * a BMP image. */
 
-#include "rlefont.h"
-#include "fonts.h"
-#include "mini_utf8.h"
-#include "autokerning.h"
-#include "wordwrap.h"
-#include "justify.h"
+#include <mcufont.h>
+#include <fonts.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -73,11 +69,12 @@ typedef struct {
     uint16_t width;
     uint16_t height;
     uint16_t y;
-    const struct rlefont_s *font;
+    const struct mf_rlefont_s *font;
 } state_t;
 
 /* Callback to write to a memory buffer. */
-void pixel_callback(int16_t x, int16_t y, uint8_t count, uint8_t alpha, void *state)
+void pixel_callback(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
+                    void *state)
 {
     state_t *s = (state_t*)state;
     uint16_t val;
@@ -99,7 +96,7 @@ void pixel_callback(int16_t x, int16_t y, uint8_t count, uint8_t alpha, void *st
 bool line_callback(const char *line, uint16_t count, void *state)
 {
     state_t *s = (state_t*)state;
-    render_justified(s->font, 2, s->y, s->width - 4,
+    mf_render_justified(s->font, 2, s->y, s->width - 4,
                    line, count, pixel_callback, state);
     s->y += s->font->height;
     return true;
@@ -117,7 +114,7 @@ int main(int argc, char **argv)
 {
     const char *filename, *string;
     int width = 640, height;
-    const struct rlefont_s *font;
+    const struct mf_rlefont_s *font;
     state_t state = {};
     
     if (argc != 4)
@@ -126,7 +123,7 @@ int main(int argc, char **argv)
         return 1;
     }
     
-    font = find_font(argv[1], INCLUDED_FONTS);
+    font = mf_find_font(argv[1], MF_INCLUDED_FONTS);
     
     if (!font)
     {
@@ -139,7 +136,7 @@ int main(int argc, char **argv)
     
     /* Count the number of lines that we need. */
     height = 0;
-    wordwrap(font, width - 4, string, count_lines, &height);
+    mf_wordwrap(font, width - 4, string, count_lines, &height);
     height *= font->height;
     height += 4;
     
@@ -151,7 +148,7 @@ int main(int argc, char **argv)
     state.font = font;
     
     /* Render the text */
-    wordwrap(font, width - 4, string, line_callback, &state);
+    mf_wordwrap(font, width - 4, string, line_callback, &state);
     
     /* Write out the bitmap */
     write_bmp(filename, state.buffer, width, height);

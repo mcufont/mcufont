@@ -1,24 +1,17 @@
 /* Type definitions and decoding functions for a font compression format using
  * run length encoding and dictionary compression. Font files are written
- * out by a generator program, which searches for the optimal dictionary
- * to best compress the font. These routines can very quickly decompress the
- * encoded font data.
+ * out as C source code by a generator program.
  */
 
-#ifndef _RLEFONT_H_
-#define _RLEFONT_H_
+#ifndef _MF_RLEFONT_H_
+#define _MF_RLEFONT_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <stdbool.h>
-#include <stdint.h>
+#include "mf_encoding.h"
 
 /* Structure for a range of characters. This implements a sparse storage of
  * character indices, so that you can e.g. pick a 100 characters in the middle
  * of the UTF16 range and just store them. */
-struct char_range_s
+struct mf_char_range_s
 {
     /* The number of the first character in this range. */
     uint16_t first_char;
@@ -34,7 +27,7 @@ struct char_range_s
 };
 
 /* Structure for a single encoded font. */
-struct rlefont_s
+struct mf_rlefont_s
 {
     /* Full name of the font, comes from the original font file. */
     const char *full_name;
@@ -65,7 +58,7 @@ struct rlefont_s
     const uint8_t char_range_count;
     
     /* Array of the character ranges */
-    const struct char_range_s *char_ranges;
+    const struct mf_char_range_s *char_ranges;
     
     /* Width and height of the character bounding box. */
     uint8_t width;
@@ -77,10 +70,10 @@ struct rlefont_s
 };
 
 /* Lookup structure for searching fonts by name. */
-struct rlefont_list_s
+struct mf_rlefont_list_s
 {
-    const struct rlefont_list_s *next;
-    const struct rlefont_s *font;
+    const struct mf_rlefont_list_s *next;
+    const struct mf_rlefont_s *font;
 };
 
 /* Callback function that writes pixels to screen / buffer / whatever.
@@ -91,47 +84,48 @@ struct rlefont_list_s
  * alpha: The "opaqueness" of the pixels, 0 for background, 255 for text.
  * state: Free variable that was passed to render_character().
  */
-typedef void (*pixel_callback_t) (int16_t x, int16_t y, uint8_t count,
-                                  uint8_t alpha, void *state);
+typedef void (*mf_pixel_callback_t) (int16_t x, int16_t y, uint8_t count,
+                                     uint8_t alpha, void *state);
 
 /* Function to decode and render a single character. 
  * 
  * font:      Pointer to the font definition.
  * x0, y0:    Upper left corner of the target area.
- * character: The character code (UTF-16) to render.
+ * character: The character code (unicode) to render.
  * callback:  Callback function to write out the pixels.
  * state:     Free variable for caller to use (can be NULL).
  * 
  * Returns width of the character.
  */
-uint8_t render_character(const struct rlefont_s *font,
-                         int16_t x0, int16_t y0,
-                         uint16_t character,
-                         pixel_callback_t callback,
-                         void *state);
+MF_EXTERN uint8_t mf_render_character(const struct mf_rlefont_s *font,
+                                      int16_t x0, int16_t y0,
+                                      mf_char character,
+                                      mf_pixel_callback_t callback,
+                                      void *state);
 
 /* Function to get the width of a single character.
  * This is not necessarily the bounding box of the character
  * data, but rather the tracking width.
  *
  * font:      Pointer to the font definition.
- * character: The character code (UTF-16) to render.
+ * character: The character code (unicode) to render.
  * 
- * Returns width of the character.
+ * Returns width of the character in pixels.
  */
-uint8_t character_width(const struct rlefont_s *font,
-                        uint16_t character);
+MF_EXTERN uint8_t mf_character_width(const struct mf_rlefont_s *font,
+                                     mf_char character);
 
 /* Find a font based on name. The name can be either short name or full name.
- * Note: You can pass INCLUDED_FONTS to search among all the included .h files.
+ * Note: You can pass MF_INCLUDED_FONTS to search among all the included .h
+ * files.
  *
  * name: Font name to search for.
  * fonts: Pointer to the first font search entry.
  *
  * Returns a pointer to the font or NULL if not found.
  */
-const struct rlefont_s *find_font(const char *name,
-                                  const struct rlefont_list_s *fonts);
+MF_EXTERN const struct mf_rlefont_s *mf_find_font(const char *name,
+                                        const struct mf_rlefont_list_s *fonts);
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,5 @@
-#include "wordwrap.h"
-#include <stdbool.h>
+#include "mf_wordwrap.h"
+#include "mf_internal.h"
 
 /* Represents a single word and the whitespace after it. */
 struct wordlen_s
@@ -11,38 +11,38 @@ struct wordlen_s
 
 /* Take the next word from the string and compute its width.
  * Returns true if the word ends in a linebreak. */
-static bool get_wordlen(const struct rlefont_s *font, const char **text,
+static bool get_wordlen(const struct mf_rlefont_s *font, mf_str *text,
                         struct wordlen_s *result)
 {
-    uint16_t c;
-    const char *prev;
+    mf_char c;
+    mf_str prev;
     
     result->word = 0;
     result->space = 0;
     result->chars = 0;
     
-    c = utf8_getchar(text);
-    while (c && !_isspace(c))
+    c = mf_getchar(text);
+    while (c && !mf_isspace(c))
     {
         result->chars++;
-        result->word += character_width(font, c);
-        c = utf8_getchar(text);
+        result->word += mf_character_width(font, c);
+        c = mf_getchar(text);
     }
     
     prev = *text;
-    while (c && _isspace(c))
+    while (c && mf_isspace(c))
     {
         result->chars++;
         
         if (c == ' ')
-            result->space += character_width(font, c);
+            result->space += mf_character_width(font, c);
         else if (c == '\t')
-            result->space += character_width(font, ' ') * TABSIZE;
+            result->space += mf_character_width(font, ' ') * MF_TABSIZE;
         else if (c == '\n')
             break;
         
         prev = *text;
-        c = utf8_getchar(text);
+        c = mf_getchar(text);
     }
     
     /* The last loop reads the first character of next word, put it back. */
@@ -55,7 +55,7 @@ static bool get_wordlen(const struct rlefont_s *font, const char **text,
 /* Represents the rendered length for a single line. */
 struct linelen_s
 {
-    const char *start; /* Start of the text for line. */
+    mf_str start; /* Start of the text for line. */
     uint16_t chars; /* Total number of characters on the line. */
     int16_t width; /* Total length of all words + whitespace on the line in pixels. */
     bool linebreak; /* True if line ends in a linebreak */
@@ -65,10 +65,10 @@ struct linelen_s
 
 /* Append word onto the line if it fits. If it would overflow, don't add and
  * return false. */
-static bool append_word(const struct rlefont_s *font, int16_t width,
-                        struct linelen_s *current, const char **text)
+static bool append_word(const struct mf_rlefont_s *font, int16_t width,
+                        struct linelen_s *current, mf_str *text)
 {
-    const char *tmp = *text;
+    mf_str tmp = *text;
     struct wordlen_s wordlen;
     bool linebreak;
     
@@ -117,7 +117,6 @@ static void tune_lines(struct linelen_s *current, struct linelen_s *previous,
     if (delta1 > delta2 && curw2 <= max_width)
     {
         /* Do the change. */
-        const char *tmp;
         uint16_t chars;
         
         previous->chars -= previous->last_word.chars;
@@ -126,15 +125,13 @@ static void tune_lines(struct linelen_s *current, struct linelen_s *previous,
         current->width += previous->last_word.word + previous->last_word.space;
         previous->last_word = previous->last_word_2;
         
-        tmp = previous->start;
-        chars = previous->chars;
-        while (chars--) utf8_getchar(&tmp);
-        current->start = tmp;
+        chars = previous->last_word.chars;
+        while (chars--) mf_rewind(&current->start);
     }
 }
 
-void wordwrap(const struct rlefont_s *font, int16_t width,
-              const char *text, line_callback_t callback, void *state)
+void mf_wordwrap(const struct mf_rlefont_s *font, int16_t width,
+                 mf_str text, mf_line_callback_t callback, void *state)
 {
     struct linelen_s current = {};
     struct linelen_s previous = {};
@@ -154,7 +151,8 @@ void wordwrap(const struct rlefont_s *font, int16_t width,
                 if (!previous.linebreak && !current.linebreak)
                     tune_lines(&current, &previous, width);
                 
-                callback(previous.start, previous.chars, state);
+                if (!callback(previous.start, previous.chars, state))
+                    return;
             }
             
             previous = current;
@@ -171,7 +169,10 @@ void wordwrap(const struct rlefont_s *font, int16_t width,
     
     /* Dispatch the last lines. */
     if (previous.chars)
-        callback(previous.start, previous.chars, state);
+    {
+        if (!callback(previous.start, previous.chars, state))
+            return;
+    }
     
     if (current.chars)
         callback(current.start, current.chars, state);

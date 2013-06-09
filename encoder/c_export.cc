@@ -142,22 +142,22 @@ void write_header(std::ostream &out, std::string name, const DataFile &datafile)
     out << "#ifndef _" << name << "_H_" << std::endl;
     out << "#define _" << name << "_H_" << std::endl;
     out << std::endl;
-    out << "#include \"rlefont.h\"" << std::endl;
+    out << "#include \"mf_rlefont.h\"" << std::endl;
     out << std::endl;
     out << "/* The font definition */" << std::endl;
-    out << "extern const struct rlefont_s rlefont_" << name << ";" << std::endl;
+    out << "extern const struct mf_rlefont_s mf_rlefont_" << name << ";" << std::endl;
     out << std::endl;
     out << "/* List entry for searching fonts by name. */" << std::endl;
-    out << "static const struct rlefont_list_s rlefont_" << name << "_listentry = {" << std::endl;
-    out << "#   ifndef INCLUDED_FONTS" << std::endl;
+    out << "static const struct mf_rlefont_list_s mf_rlefont_" << name << "_listentry = {" << std::endl;
+    out << "#   ifndef MF_INCLUDED_FONTS" << std::endl;
     out << "    0," << std::endl;
     out << "#   else" << std::endl;
-    out << "    INCLUDED_FONTS," << std::endl;
-    out << "#   undef INCLUDED_FONTS" << std::endl;
+    out << "    MF_INCLUDED_FONTS," << std::endl;
+    out << "#   undef MF_INCLUDED_FONTS" << std::endl;
     out << "#   endif" << std::endl;
-    out << "    &rlefont_" << name << std::endl;
+    out << "    &mf_rlefont_" << name << std::endl;
     out << "};" << std::endl;
-    out << "#define INCLUDED_FONTS (&rlefont_" << name << "_listentry)" << std::endl;
+    out << "#define MF_INCLUDED_FONTS (&mf_rlefont_" << name << "_listentry)" << std::endl;
     
     out << std::endl;
     out << "#endif" << std::endl;
@@ -240,7 +240,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     }
     
     // Write out a table describing the character ranges
-    out << "static const struct char_range_s char_ranges[] = {" << std::endl;
+    out << "static const struct mf_char_range_s char_ranges[] = {" << std::endl;
     for (size_t i = 0; i < ranges.size(); i++)
     {
         out << "    {" << ranges.at(i).first_char
@@ -252,7 +252,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     out << std::endl;
     
     // Pull it all together in the rlefont_s structure.
-    out << "const struct rlefont_s rlefont_" << name << " = {" << std::endl;
+    out << "const struct mf_rlefont_s mf_rlefont_" << name << " = {" << std::endl;
     out << "    " << "\"" << datafile.GetFontInfo().name << "\"," << std::endl;
     out << "    " << "\"" << name << "\"," << std::endl;
     out << "    " << "dictionary_data," << std::endl;

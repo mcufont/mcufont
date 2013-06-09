@@ -3,10 +3,11 @@
  * character pairs, like WA or L'.
  */
 
-#ifndef _AUTOKERNING_H_
-#define _AUTOKERNING_H_
+#ifndef _MF_KERNING_H_
+#define _MF_KERNING_H_
 
-#include "rlefont.h"
+#include "mf_config.h"
+#include "mf_rlefont.h"
 
 /* Compute the kerning adjustment when c1 is followed by c2.
  * 
@@ -16,6 +17,13 @@
  * 
  * Returns the offset to add to the x position for c2.
  */
-int8_t compute_kerning(const struct rlefont_s *font, uint16_t c1, uint16_t c2);
+#if MF_USE_KERNING
+MF_EXTERN int8_t mf_compute_kerning(const struct mf_rlefont_s *font,
+                                    mf_char c1, mf_char c2);
+#else
+static int8_t mf_compute_kerning(const struct mf_rlefont_s *font,
+                                 mf_char c1, mf_char c2)
+{ return 0; }
+#endif
 
 #endif

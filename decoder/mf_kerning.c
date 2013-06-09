@@ -1,29 +1,11 @@
-#include "autokerning.h"
+#include "mf_kerning.h"
 
-/* Space between characters, percent of glyph width. */
-#ifndef KERNING_SPACE_PERCENT
-#define KERNING_SPACE_PERCENT 15
-#endif
-
-/* Space between characters, pixels. */
-#ifndef KERNING_SPACE_PX
-#define KERNING_SPACE_PX 3
-#endif
-
-/* Maximum kerning adjustment, percent of glyph width. */
-#ifndef KERNING_MAX
-#define KERNING_MAX 20
-#endif
-
-/* Number of kerning zones to divide the glyph height into. */
-#ifndef KERNING_ZONES
-#define KERNING_ZONES 16
-#endif
+#if MF_USE_KERNING
 
 /* Structure for keeping track of the edge of the glyph as it is rendered. */
 struct kerning_state_s
 {
-    uint8_t edgepos[KERNING_ZONES];
+    uint8_t edgepos[MF_KERNING_ZONES];
     uint8_t zoneheight;
 };
 
@@ -60,28 +42,32 @@ static int16_t min16(int16_t a, int16_t b) { return (a < b) ? a : b; }
 static int16_t max16(int16_t a, int16_t b) { return (a > b) ? a : b; }
 static int16_t avg16(int16_t a, int16_t b) { return (a + b) / 2; }
 
-int8_t compute_kerning(const struct rlefont_s *font, uint16_t c1, uint16_t c2)
+int8_t mf_compute_kerning(const struct mf_rlefont_s *font,
+                          mf_char c1, mf_char c2)
 {
     struct kerning_state_s leftedge, rightedge;
     uint8_t w1, w2, i, min_space;
     int16_t normal_space, adjust, max_adjust;
     
+    /* Compute the height of one kerning zone in pixels */
+    i = font->height / MF_KERNING_ZONES;
+    if (i < 1) i = 1;
+    
     /* Initialize structures */
-    i = max16(font->height / KERNING_ZONES, 1);
     leftedge.zoneheight = rightedge.zoneheight = i;
-    for (i = 0; i < KERNING_ZONES; i++)
+    for (i = 0; i < MF_KERNING_ZONES; i++)
     {
         leftedge.edgepos[i] = 255;
         rightedge.edgepos[i] = 0;
     }
     
     /* Analyze the edges of both glyphs. */
-    w1 = render_character(font, 0, 0, c1, fit_rightedge, &rightedge);
-    w2 = render_character(font, 0, 0, c2, fit_leftedge, &leftedge);
+    w1 = mf_render_character(font, 0, 0, c1, fit_rightedge, &rightedge);
+    w2 = mf_render_character(font, 0, 0, c2, fit_leftedge, &leftedge);
     
     /* Find the minimum horizontal space between the glyphs. */
     min_space = 255;
-    for (i = 0; i < KERNING_ZONES; i++)
+    for (i = 0; i < MF_KERNING_ZONES; i++)
     {
         uint8_t space;
         if (leftedge.edgepos[i] == 255 || rightedge.edgepos[i] == 0)
@@ -96,12 +82,15 @@ int8_t compute_kerning(const struct rlefont_s *font, uint16_t c1, uint16_t c2)
         return 0; /* One of the characters is space, or both are punctuation. */
     
     /* Compute the adjustment of the glyph position. */
-    normal_space = avg16(w1, w2) * KERNING_SPACE_PERCENT / 100 + KERNING_SPACE_PX;
+    normal_space = avg16(w1, w2) * MF_KERNING_SPACE_PERCENT / 100;
+    normal_space += MF_KERNING_SPACE_PIXELS;
     adjust = normal_space - min_space;
-    max_adjust = -max16(w1, w2) * KERNING_MAX / 100;
+    max_adjust = -max16(w1, w2) * MF_KERNING_LIMIT / 100;
     
     if (adjust > 0) adjust = 0;
     if (adjust < max_adjust) adjust = max_adjust;
     
     return adjust;
 }
+
+#endif

@@ -1,13 +1,9 @@
-#include "justify.h"
-#include "mini_utf8.h"
-#include "fontutils.h"
+#include "mf_justify.h"
+#include "mf_kerning.h"
+#include "mf_internal.h"
 
-#ifndef NO_KERNING
-#include "autokerning.h"
-#endif
-
-int16_t get_string_width(const struct rlefont_s *font, const char *text,
-                         uint16_t count, bool kern)
+int16_t mf_get_string_width(const struct mf_rlefont_s *font, mf_str text,
+                            uint16_t count, bool kern)
 {
     int16_t result = 0;
     uint16_t c1 = 0, c2;
@@ -17,12 +13,12 @@ int16_t get_string_width(const struct rlefont_s *font, const char *text,
     
     while (count-- && *text)
     {
-        c2 = utf8_getchar(&text);
-#ifndef NO_KERNING
+        c2 = mf_getchar(&text);
+
         if (kern && c1 != 0)
-            result += compute_kerning(font, c1, c2);
-#endif
-        result += character_width(font, c2);
+            result += mf_compute_kerning(font, c1, c2);
+
+        result += mf_character_width(font, c2);
         c1 = c2;
     }
     
@@ -30,9 +26,10 @@ int16_t get_string_width(const struct rlefont_s *font, const char *text,
 }
 
 /* Return the length of the string without trailing spaces. */
-static uint16_t strip_spaces(const char *text, uint16_t count, uint16_t *last_char)
+static uint16_t strip_spaces(mf_str text, uint16_t count, mf_char *last_char)
 {
-    uint16_t i = 0, result = 0, tmp = 0;
+    uint16_t i = 0, result = 0;
+    mf_char tmp = 0;
     
     if (!count)
         count = 0xFFFF;
@@ -40,8 +37,8 @@ static uint16_t strip_spaces(const char *text, uint16_t count, uint16_t *last_ch
     while (count-- && *text)
     {
         i++;
-        tmp = utf8_getchar(&text);
-        if (!_isspace(tmp))
+        tmp = mf_getchar(&text);
+        if (!mf_isspace(tmp))
             result = i;
     }
     
@@ -57,107 +54,111 @@ static uint16_t strip_spaces(const char *text, uint16_t count, uint16_t *last_ch
 }
 
 /* Count the number of space characters in string */
-static uint16_t count_spaces(const char *text, uint16_t count)
+static uint16_t count_spaces(mf_str text, uint16_t count)
 {
     uint16_t spaces = 0;
     while (count-- && *text)
     {
-        if (_isspace(utf8_getchar(&text)))
+        if (mf_isspace(mf_getchar(&text)))
             spaces++;
     }
     return spaces;
 }
 
 /* Render left-aligned string, left edge at x0. */
-static void render_left(const struct rlefont_s *font, int16_t x0, int16_t y0,
-                        const char *text, uint16_t count,
-                        pixel_callback_t callback, void *state)
+static void render_left(const struct mf_rlefont_s *font,
+                        int16_t x0, int16_t y0,
+                        mf_str text, uint16_t count,
+                        mf_pixel_callback_t callback, void *state)
 {
     int16_t x;
-    uint16_t c1 = 0, c2;
+    mf_char c1 = 0, c2;
     
     x = x0 - font->baseline_x;
     while (count--)
     {
-        c2 = utf8_getchar(&text);
+        c2 = mf_getchar(&text);
         
         if (c2 == '\t')
         {
-            x = round_to_tab(font, x0, x);
+            x = mf_round_to_tab(font, x0, x);
             c1 = c2;
             continue;
         }
         
-#ifndef NO_KERNING
         if (c1 != 0)
-            x += compute_kerning(font, c1, c2);
-#endif
-        x += render_character(font, x, y0, c2, callback, state);
+            x += mf_compute_kerning(font, c1, c2);
+
+        x += mf_render_character(font, x, y0, c2, callback, state);
         c1 = c2;
     }
 }
 
 /* Render right-aligned string, right edge at x0. */
-static void render_right(const struct rlefont_s *font, int16_t x0, int16_t y0,
-                        const char *text, uint16_t count,
-                        pixel_callback_t callback, void *state)
+static void render_right(const struct mf_rlefont_s *font,
+                         int16_t x0, int16_t y0,
+                         mf_str text, uint16_t count,
+                         mf_pixel_callback_t callback, void *state)
 {
     int16_t x;
-    uint16_t i, c1, c2 = 0;
-    const char *tmp;
+    uint16_t i;
+    mf_char c1, c2 = 0;
+    mf_str tmp;
     
     /* Go to the end of the line. */
     for (i = 0; i < count; i++)
-        utf8_getchar(&text);
+        mf_getchar(&text);
     
     x = x0 - font->baseline_x;
     for (i = 0; i < count; i++)
     {
-        utf8_rewind(&text);
+        mf_rewind(&text);
         tmp = text;
-        c1 = utf8_getchar(&tmp);
-        x -= character_width(font, c1);
+        c1 = mf_getchar(&tmp);
+        x -= mf_character_width(font, c1);
         
-#ifndef NO_KERNING
         if (c2 != 0)
-            x -= compute_kerning(font, c1, c2);
-#endif
+            x -= mf_compute_kerning(font, c1, c2);
         
-        render_character(font, x, y0, c1, callback, state);
+        mf_render_character(font, x, y0, c1, callback, state);
         c2 = c1;
     }
 }
 
-void render_aligned(const struct rlefont_s *font, int16_t x0, int16_t y0,
-                    enum align_t align, const char *text, uint16_t count,
-                    pixel_callback_t callback, void *state)
+void mf_render_aligned(const struct mf_rlefont_s *font,
+                       int16_t x0, int16_t y0,
+                       enum mf_align_t align,
+                       mf_str text, uint16_t count,
+                       mf_pixel_callback_t callback, void *state)
 {
     int16_t string_width;
     count = strip_spaces(text, count, 0);
     
-    if (align == ALIGN_LEFT)
+    if (align == MF_ALIGN_LEFT)
     {
         render_left(font, x0, y0, text, count, callback, state);
     }
-    if (align == ALIGN_CENTER)
+    if (align == MF_ALIGN_CENTER)
     {
-        string_width = get_string_width(font, text, count, false);
+        string_width = mf_get_string_width(font, text, count, false);
         x0 -= string_width / 2;
         render_left(font, x0, y0, text, count, callback, state);
     }
-    else if (align == ALIGN_RIGHT)
+    else if (align == MF_ALIGN_RIGHT)
     {
         render_right(font, x0, y0, text, count, callback, state);
     }
 }
 
-void render_justified(const struct rlefont_s *font, int16_t x0, int16_t y0,
-                      int16_t width, const char *text, uint16_t count,
-                      pixel_callback_t callback, void *state)
+void mf_render_justified(const struct mf_rlefont_s *font,
+                         int16_t x0, int16_t y0, int16_t width,
+                         mf_str text, uint16_t count,
+                         mf_pixel_callback_t callback, void *state)
 {
     int16_t string_width, adjustment;
-    uint16_t last_char;
     uint16_t num_spaces;
+    mf_char last_char;
+    
     count = strip_spaces(text, count, &last_char);
     
     if (last_char == '\n' || last_char == 0)
@@ -167,7 +168,7 @@ void render_justified(const struct rlefont_s *font, int16_t x0, int16_t y0,
         return;
     }
     
-    string_width = get_string_width(font, text, count, false);
+    string_width = mf_get_string_width(font, text, count, false);
     adjustment = width - string_width;
     num_spaces = count_spaces(text, count);
     
@@ -178,19 +179,19 @@ void render_justified(const struct rlefont_s *font, int16_t x0, int16_t y0,
         x = x0 - font->baseline_x;
         while (count--)
         {
-            c2 = utf8_getchar(&text);
+            c2 = mf_getchar(&text);
             
             if (c2 == '\t')
             {
                 tmp = x;
-                x = round_to_tab(font, x0, x);
-                adjustment -= x - tmp - character_width(font, '\t');
+                x = mf_round_to_tab(font, x0, x);
+                adjustment -= x - tmp - mf_character_width(font, '\t');
                 num_spaces--;
                 c1 = c2;
                 continue;
             }
             
-            if (_isspace(c2))
+            if (mf_isspace(c2))
             {
                 tmp = (adjustment + num_spaces / 2) / num_spaces;
                 adjustment -= tmp;
@@ -198,15 +199,14 @@ void render_justified(const struct rlefont_s *font, int16_t x0, int16_t y0,
                 x += tmp;
             }
             
-#ifndef NO_KERNING
             if (c1 != 0)
             {
-                tmp = compute_kerning(font, c1, c2);
+                tmp = mf_compute_kerning(font, c1, c2);
                 x += tmp;
                 adjustment -= tmp;
             }
-#endif
-            x += render_character(font, x, y0, c2, callback, state);
+
+            x += mf_render_character(font, x, y0, c2, callback, state);
             c1 = c2;
         }
     }
