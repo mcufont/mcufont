@@ -17,5 +17,5 @@ DECODER = $(DECODERDIR)/mf_rlefont.c \
           $(DECODERDIR)/mf_wordwrap.c \
           $(DECODERDIR)/mf_justify.c
 
-render_bmp: render_bmp.c $(DECODER) $(FONTS)
+render_bmp: render_bmp.c write_bmp.c $(DECODER) $(FONTS)
 	$(CC) $(CFLAGS) -I $(FONTDIR) -I $(DECODERDIR) -o $@ $^
