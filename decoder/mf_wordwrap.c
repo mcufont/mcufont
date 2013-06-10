@@ -1,5 +1,10 @@
 #include "mf_wordwrap.h"
-#include "mf_internal.h"
+
+/* Returns true if the line can be broken at this character. */
+static bool is_wrap_space(uint16_t c)
+{
+    return c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '-';
+}
 
 /* Represents a single word and the whitespace after it. */
 struct wordlen_s
@@ -22,7 +27,7 @@ static bool get_wordlen(const struct mf_rlefont_s *font, mf_str *text,
     result->chars = 0;
     
     c = mf_getchar(text);
-    while (c && !mf_isspace(c))
+    while (c && !is_wrap_space(c))
     {
         result->chars++;
         result->word += mf_character_width(font, c);
@@ -30,7 +35,7 @@ static bool get_wordlen(const struct mf_rlefont_s *font, mf_str *text,
     }
     
     prev = *text;
-    while (c && mf_isspace(c))
+    while (c && is_wrap_space(c))
     {
         result->chars++;
         
@@ -90,8 +95,32 @@ static bool append_word(const struct mf_rlefont_s *font, int16_t width,
     }
 }
 
+/* Append a character to the line if it fits. */
+static bool append_char(const struct mf_rlefont_s *font, int16_t width,
+                        struct linelen_s *current, mf_str *text)
+{
+    mf_str tmp = *text;
+    mf_char c;
+    uint16_t w;
+    
+    c = mf_getchar(&tmp);
+    w = mf_character_width(font, c);
+    
+    if (current->width + w <= width)
+    {
+        *text = tmp;
+        current->chars++;
+        current->width += w;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 static int16_t abs16(int16_t x) { return (x > 0) ? x : -x; }
-static int16_t sq16(int16_t x) { return x * x; }
+static int32_t sq16(int16_t x) { return (int32_t)x * x; }
 
 /* Try to balance the lines by potentially moving one word from the previous
  * line to the the current one. */
@@ -100,7 +129,7 @@ static void tune_lines(struct linelen_s *current, struct linelen_s *previous,
 {
     int16_t curw1, prevw1;
     int16_t curw2, prevw2;
-    int16_t delta1, delta2;
+    int32_t delta1, delta2;
     
     /* If the lines are rendered as is */
     curw1 = current->width - current->last_word.space;
@@ -119,13 +148,13 @@ static void tune_lines(struct linelen_s *current, struct linelen_s *previous,
         /* Do the change. */
         uint16_t chars;
         
-        previous->chars -= previous->last_word.chars;
-        current->chars += previous->last_word.chars;
+        chars = previous->last_word.chars;
+        previous->chars -= chars;
+        current->chars += chars;
         previous->width -= previous->last_word.word + previous->last_word.space;
         current->width += previous->last_word.word + previous->last_word.space;
         previous->last_word = previous->last_word_2;
         
-        chars = previous->last_word.chars;
         while (chars--) mf_rewind(&current->start);
     }
 }
@@ -145,6 +174,13 @@ void mf_wordwrap(const struct mf_rlefont_s *font, int16_t width,
         
         if (full || current.linebreak)
         {
+            if (!current.chars)
+            {
+                /* We have a very long word. We must just cut it off at some
+                 * point. */
+                while (append_char(font, width, &current, &text));
+            }
+            
             if (previous.chars)
             {
                 /* Tune the length and dispatch the previous line. */
@@ -162,8 +198,7 @@ void mf_wordwrap(const struct mf_rlefont_s *font, int16_t width,
             current.linebreak = false;
             current.last_word.word = 0;
             current.last_word.space = 0;
-            current.last_word_2.word = 0;
-            current.last_word_2.space = 0;
+            current.last_word.chars = 0;
         }
     }
     

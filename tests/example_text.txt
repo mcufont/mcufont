@@ -1,0 +1,18 @@
+	Raw material may be made into a finished product which will have the quality of usefulness alone. Utility is the first purpose of most of the works of man. But when the maker is moved by pride in his work and a desire for beauty to make his handiwork pleasing in appearance as well as useful a second purpose is fulfilled. All civilization and most forms of savagery demand that the equipment of routine life shall be pleasing to the eye after its prime purpose of usefulness has been developed.
+	If an article be pleasing in appearance its making will have involved some of the elements of design. The relationship of its parts, the lines of its construction, its coloring, the manner in which it is ornamented will depend first upon its purpose, but will be guided by a group of recognized traditions which we call the principles of design.
+	Design governs the arrangement of masses, lines, and dots to secure the qualities of beauty and fitness.
+
+Year	Months	Days
+2010	12    	365
+2011	12    	365
+2012	12    	366
+2013	12    	365
+
+Very
+short
+lines.
+
+Very_long_words_that_just_keep_going_and_going_for_many_lines_at_a_time_causing_hard_times_for_the_word_wrapping_algorithm_it_will_be_painful_to_try_and_justify_these_lines_because_there_is_no_good_point_to_break_the_line.
+
+Non breaking spaces — they will prevent line wrapping just as efficiently and cause cutoffs at random points of the line.
+

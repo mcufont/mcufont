@@ -1,6 +1,31 @@
 #include "mf_justify.h"
 #include "mf_kerning.h"
-#include "mf_internal.h"
+
+/* Returns true if the character is a justification point, i.e. expands
+ * when the text is being justified. */
+static bool is_justify_space(uint16_t c)
+{
+    return c == ' ' || c == 0xA0;
+}
+
+/* Round the X coordinate up to the nearest tab stop. */
+static int16_t mf_round_to_tab(const struct mf_rlefont_s *font,
+                               int16_t x0, int16_t x)
+{
+    int16_t spacew, tabw, dx;
+    
+    spacew = mf_character_width(font, ' ');
+    tabw = spacew * MF_TABSIZE;
+    
+    /* Always atleast 1 space */
+    x += spacew;
+    
+    /* Round to next tab stop */
+    dx = x - x0 + font->baseline_x;
+    x += tabw - (dx % tabw);
+    
+    return x;
+}
 
 int16_t mf_get_string_width(const struct mf_rlefont_s *font, mf_str text,
                             uint16_t count, bool kern)
@@ -38,8 +63,11 @@ static uint16_t strip_spaces(mf_str text, uint16_t count, mf_char *last_char)
     {
         i++;
         tmp = mf_getchar(&text);
-        if (!mf_isspace(tmp))
+        if (!is_justify_space(tmp) &&
+            tmp != '\n' && tmp != '\r' && tmp != '\t')
+        {
             result = i;
+        }
     }
     
     if (last_char)
@@ -51,18 +79,6 @@ static uint16_t strip_spaces(mf_str text, uint16_t count, mf_char *last_char)
     }
     
     return result;
-}
-
-/* Count the number of space characters in string */
-static uint16_t count_spaces(mf_str text, uint16_t count)
-{
-    uint16_t spaces = 0;
-    while (count-- && *text)
-    {
-        if (mf_isspace(mf_getchar(&text)))
-            spaces++;
-    }
-    return spaces;
 }
 
 /* Render left-aligned string, left edge at x0. */
@@ -150,6 +166,18 @@ void mf_render_aligned(const struct mf_rlefont_s *font,
     }
 }
 
+/* Count the number of space characters in string */
+static uint16_t count_spaces(mf_str text, uint16_t count)
+{
+    uint16_t spaces = 0;
+    while (count-- && *text)
+    {
+        if (is_justify_space(mf_getchar(&text)))
+            spaces++;
+    }
+    return spaces;
+}
+
 void mf_render_justified(const struct mf_rlefont_s *font,
                          int16_t x0, int16_t y0, int16_t width,
                          mf_str text, uint16_t count,
@@ -186,12 +214,11 @@ void mf_render_justified(const struct mf_rlefont_s *font,
                 tmp = x;
                 x = mf_round_to_tab(font, x0, x);
                 adjustment -= x - tmp - mf_character_width(font, '\t');
-                num_spaces--;
                 c1 = c2;
                 continue;
             }
             
-            if (mf_isspace(c2))
+            if (is_justify_space(c2))
             {
                 tmp = (adjustment + num_spaces / 2) / num_spaces;
                 adjustment -= tmp;
