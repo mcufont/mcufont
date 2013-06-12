@@ -68,7 +68,7 @@ static void readfile(std::istream &file, std::vector<char> &data)
     }
 }
 
-std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size)
+std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size, bool bw)
 {
     std::vector<char> data;
     readfile(file, data);
@@ -86,7 +86,9 @@ std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size)
     int u_per_em = face->units_per_EM;
     auto topx = [size, u_per_em](int s) { return (s * size + u_per_em / 2) / u_per_em; };
     
-    fontinfo.name = std::string(face->family_name) + " " + std::string(face->style_name);
+    fontinfo.name = std::string(face->family_name) + " " +
+                    std::string(face->style_name) + " " +
+                    std::to_string(size);
     
     // Reserve 4 pixels on each side for antialiasing + hinting.
     // They will be cropped off later.
@@ -95,13 +97,17 @@ std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size)
     fontinfo.baseline_x = topx(-face->bbox.xMin) + 4;
     fontinfo.baseline_y = topx(face->bbox.yMax) + 4;
     
+    FT_Int32 loadmode = FT_LOAD_TARGET_NORMAL | FT_LOAD_RENDER;
+    
+    if (bw)
+        loadmode = FT_LOAD_TARGET_MONO | FT_LOAD_MONOCHROME | FT_LOAD_RENDER;
+    
     FT_ULong charcode;
     FT_UInt gindex;
     charcode = FT_Get_First_Char(face, &gindex);
     while (gindex)
     {
-        checkFT(FT_Load_Glyph(face, gindex, FT_LOAD_DEFAULT));
-        checkFT(FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL));
+        checkFT(FT_Load_Glyph(face, gindex, loadmode));
         
         DataFile::glyphentry_t glyph;
         glyph.width = (face->glyph->advance.x + 32) / 64;
@@ -121,12 +127,24 @@ std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size)
         if (dy + face->glyph->bitmap.rows > fontinfo.max_height)
             dy = fontinfo.max_height - face->glyph->bitmap.rows;
         
+        size_t s = face->glyph->bitmap.pitch;
         for (int y = 0; y < face->glyph->bitmap.rows; y++)
         {
             for (int x = 0; x < face->glyph->bitmap.width; x++)
             {
-                glyph.data.at((y + dy) * dw + x + dx) =
-                    (face->glyph->bitmap.buffer[w * y + x] + 8) / 17;
+                size_t index = (y + dy) * dw + x + dx;
+                
+                if (face->glyph->bitmap.pixel_mode == FT_PIXEL_MODE_MONO)
+                {
+                    uint8_t byte = face->glyph->bitmap.buffer[s * y + x / 8];
+                    byte <<= x % 8;
+                    glyph.data.at(index) = (byte & 0x80) ? 15 : 0;
+                }
+                else
+                {
+                    glyph.data.at(index) =
+                        (face->glyph->bitmap.buffer[w * y + x] + 8) / 17;
+                }
             }
         }
         glyphtable.push_back(glyph);

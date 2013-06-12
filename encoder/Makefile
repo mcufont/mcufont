@@ -9,9 +9,9 @@ LDFLAGS += $(shell freetype-config --libs)
 OBJS = bdf_import.o freetype_import.o importtools.o \
 	datafile.o encode.o optimize.o c_export.o
 
-all: run_unittests compress
+all: run_unittests mcufont
 
-compress: main.o $(OBJS)
+mcufont: main.o $(OBJS)
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 unittests.cc: *.hh

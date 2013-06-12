@@ -3,5 +3,5 @@
 #pragma once
 #include "datafile.hh"
 
-std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size);
+std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size, bool bw);
 

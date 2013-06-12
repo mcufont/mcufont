@@ -18,6 +18,7 @@ DataFile::DataFile(const std::vector<dictentry_t> &dictionary,
 
 void DataFile::Save(std::ostream &file) const
 {
+    file << "Version 1" << std::endl;
     file << "FontName " << m_fontinfo.name << std::endl;
     file << "MaxWidth " << m_fontinfo.max_width << std::endl;
     file << "MaxHeight " << m_fontinfo.max_height << std::endl;
@@ -52,6 +53,7 @@ std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
     std::vector<dictentry_t> dictionary;
     std::vector<glyphentry_t> glyphtable;
     uint32_t seed = 1234;
+    int version = -1;
     
     std::string line;
     while (std::getline(file, line))
@@ -61,7 +63,11 @@ std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
         
         input >> tag;
         
-        if (tag == "FontName")
+        if (tag == "Version")
+        {
+            input >> version;
+        }
+        else if (tag == "FontName")
         {
             while (std::isspace(input.peek())) input.get();
             std::getline(input, fontinfo.name);
@@ -110,6 +116,11 @@ std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
             
             glyphtable.push_back(g);
         }
+    }
+    
+    if (version != 1)
+    {
+        return std::unique_ptr<DataFile>(nullptr);
     }
     
     std::unique_ptr<DataFile> result(new DataFile(dictionary, glyphtable, fontinfo));

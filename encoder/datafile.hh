@@ -48,6 +48,7 @@ public:
     void Save(std::ostream &file) const;
 
     // Load from a file (custom format)
+    // Returns nullptr if load fails.
     static std::unique_ptr<DataFile> Load(std::istream &file);
     
     // Get or set an entry in the dictionary. The size of the dictionary
@@ -142,6 +143,7 @@ public:
     
 private:
     const char *testfile =
+        "Version 1\n"
         "FontName Sans Serif\n"
         "MaxWidth 4\n"
         "MaxHeight 6\n"

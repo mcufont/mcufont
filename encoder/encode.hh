@@ -96,6 +96,7 @@ public:
     
 private:
     const char *testfile =
+        "Version 1\n"
         "FontName Sans Serif\n"
         "MaxWidth 4\n"
         "MaxHeight 6\n"
