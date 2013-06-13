@@ -233,6 +233,53 @@ void optimize_combine(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose
     }
 }
 
+// Pick a random part of an encoded glyph and encode it as a ref dict.
+void optimize_encpart(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
+{
+    std::unique_ptr<encoded_font_t> e = encode_font(datafile);
+    
+    // Pick a random encoded glyph
+    std::uniform_int_distribution<size_t> dist1(0, datafile.GetGlyphCount() - 1);
+    size_t index = dist1(rnd);
+    const encoded_font_t::refstring_t &refstr = e->glyphs.at(index);
+    
+    if (refstr.size() < 2)
+        return;
+    
+    // Pick a random part of it
+    std::uniform_int_distribution<size_t> dist2(2, refstr.size());
+    size_t length = dist2(rnd);
+    std::uniform_int_distribution<size_t> dist3(0, refstr.size() - length);
+    size_t start = dist3(rnd);
+    
+    // Decode that part
+    encoded_font_t::refstring_t substr(refstr.begin() + start,
+                                       refstr.begin() + start + length);
+    std::unique_ptr<DataFile::pixels_t> decoded =
+        decode_glyph(*e, substr, datafile.GetFontInfo());
+    
+    // Add that as a new dictionary entry
+    DataFile trial = datafile;
+    size_t worst = trial.GetLowScoreIndex();
+    DataFile::dictentry_t d = trial.GetDictionaryEntry(worst);
+    d.replacement = *decoded;
+    d.ref_encode = true;
+    trial.SetDictionaryEntry(worst, d);
+    
+    size_t newsize = get_encoded_size(trial);
+    
+    if (newsize < size)
+    {
+        d.score = size - newsize;
+        datafile.SetDictionaryEntry(worst, d);
+        size = newsize;
+        
+        if (verbose)
+            std::cout << "optimize_encpart: replaced " << worst
+                      << " score " << d.score << std::endl;
+    }
+}
+
 // Execute all the optimization algorithms once.
 void optimize_pass(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
 {
@@ -243,6 +290,7 @@ void optimize_pass(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
     optimize_trim(datafile, size, rnd, verbose);
     optimize_refdict(datafile, size, rnd, verbose);
     optimize_combine(datafile, size, rnd, verbose);
+    optimize_encpart(datafile, size, rnd, verbose);
 }
 
 // Execute multiple passes in parallel and take the one with the best result.

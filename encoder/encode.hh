@@ -37,6 +37,11 @@ inline size_t get_encoded_size(const DataFile &datafile)
     return get_encoded_size(*e);
 }
 
+// Decode a single glyph (for verification).
+std::unique_ptr<DataFile::pixels_t> decode_glyph(
+    const encoded_font_t &encoded,
+    const encoded_font_t::refstring_t &refstring,
+    const DataFile::fontinfo_t &fontinfo);
 
 // Decode a single glyph (for verification).
 std::unique_ptr<DataFile::pixels_t> decode_glyph(
