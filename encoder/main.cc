@@ -4,6 +4,7 @@
 #include "encode.hh"
 #include "freetype_import.hh"
 #include "optimize.hh"
+#include "importtools.hh"
 #include <vector>
 #include <string>
 #include <set>
@@ -219,7 +220,10 @@ static status_t cmd_filter(const std::vector<std::string> &args)
         }
     }
     
-    f.reset(new DataFile(f->GetDictionary(), newglyphs, f->GetFontInfo()));
+    DataFile::fontinfo_t fontinfo = f->GetFontInfo();
+    crop_glyphs(newglyphs, fontinfo);
+    
+    f.reset(new DataFile(f->GetDictionary(), newglyphs, fontinfo));
     std::cout << "After filtering, " << f->GetGlyphCount() << " glyphs remain." << std::endl;
     
     if (!save_dat(src, f.get()))
