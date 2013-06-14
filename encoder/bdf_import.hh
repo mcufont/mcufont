@@ -24,7 +24,7 @@ public:
     }
     
 private:
-    const char *testfile = 
+    static constexpr const char *testfile = 
         "STARTFONT 2.1\n"
         "FONT -Misc-Fixed-Medium-R-Normal--14-130-75-75-C-70-ISO8859-15\n"
         "FONTBOUNDINGBOX 7 14 0 -2\n"
