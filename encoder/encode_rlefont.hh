@@ -72,9 +72,9 @@ public:
         TS_ASSERT_EQUALS(e->glyphs.size(), 3);
         
         // Expected values for dictionary
-        encoded_font_t::rlestring_t dict0 = {0x01, 0x80, 0x01, 0x80};
-        encoded_font_t::rlestring_t dict1 = {0x04};
-        encoded_font_t::rlestring_t dict2 = {0x83};
+        encoded_font_t::rlestring_t dict0 = {0x01, 0xCE, 0x01, 0xCE};
+        encoded_font_t::rlestring_t dict1 = {0x0C};
+        encoded_font_t::rlestring_t dict2 = {0xFE};
         encoded_font_t::refstring_t dict3 = {24, 24};
         
         TS_ASSERT(e->rle_dictionary.at(0) == dict0);
@@ -84,12 +84,12 @@ public:
         
         // Expected values for glyphs
         encoded_font_t::refstring_t glyph0 = {27, 27, 27};
-        encoded_font_t::refstring_t glyph1 = {24, 25, 25, 25, 25, 0, 0, 0, 15};
-        encoded_font_t::refstring_t glyph2 = {25, 26, 0, 0, 0, 15, 15, 15, 25, 26, 16};
+        encoded_font_t::refstring_t glyph1 = {24, 25, 132, 0, 14};
+        encoded_font_t::refstring_t glyph2 = {228, 26, 244, 14, 14, 14, 228, 26, 16};
         
-        TS_ASSERT(e->glyphs.at(0) == glyph0);
-        TS_ASSERT(e->glyphs.at(1) == glyph1);
-        TS_ASSERT(e->glyphs.at(2) == glyph2);
+        TS_ASSERT_EQUALS(e->glyphs.at(0), glyph0);
+        TS_ASSERT_EQUALS(e->glyphs.at(1), glyph1);
+        TS_ASSERT_EQUALS(e->glyphs.at(2), glyph2);
     }
     
     void testDecode()
@@ -103,7 +103,7 @@ public:
             std::unique_ptr<DataFile::pixels_t> dec;
             dec = decode_glyph(*e, i, f->GetFontInfo());
             
-            TS_ASSERT(*dec == f->GetGlyphEntry(i).data);
+            TS_ASSERT_EQUALS(*dec, f->GetGlyphEntry(i).data);
         }
     }
     
@@ -115,12 +115,12 @@ private:
         "MaxHeight 6\n"
         "BaselineX 1\n"
         "BaselineY 1\n"
-        "DictEntry 1 0 0F0F\n"
-        "DictEntry 1 0 0000\n"
-        "DictEntry 1 0 FFFF\n"
-        "DictEntry 1 1 0F0F0F0F\n"
-        "Glyph 1 4 0F0F0F0F0F0F0F0F0F0F0F0F\n"
-        "Glyph 2 4 0F0F0000000000000000000F\n"
-        "Glyph 3 4 0000FFFF000FFF0000FFFF00\n";
+        "DictEntry 1 0 0E0E\n"
+        "DictEntry 1 0 000000000000\n"
+        "DictEntry 1 0 EEEE\n"
+        "DictEntry 1 1 0E0E0E0E\n"
+        "Glyph 0 4 0E0E0E0E0E0E0E0E0E0E0E0E\n"
+        "Glyph 1 4 0E0E0000000000000000000E\n"
+        "Glyph 2 4 0000EEEE000EEE0000EEEE00\n";
 };
 #endif

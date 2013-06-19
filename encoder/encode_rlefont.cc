@@ -16,8 +16,33 @@
 #define RLE_ONES        0x80 // 1 to 64 full alphas
 #define RLE_SHADE       0xC0 // 1 to 4 partial alphas
 
+// Dictionary "fill entries" for encoding bits directly.
+#define DICT_START7BIT  4
+#define DICT_START6BIT  132
+#define DICT_START5BIT  196
+#define DICT_START4BIT  228
+#define DICT_START3BIT  244
+#define DICT_START2BIT  252
+
 namespace mcufont {
 namespace rlefont {
+
+// Get bit count for the "fill entries"
+static size_t fillentry_bitcount(size_t index)
+{
+    if (index >= DICT_START2BIT)
+        return 2;
+    else if (index >= DICT_START3BIT)
+        return 3;
+    else if (index >= DICT_START4BIT)
+        return 4;
+    else if (index >= DICT_START5BIT)
+        return 5;
+    else if (index >= DICT_START6BIT)
+        return 6;
+    else
+        return 7;
+}
 
 // Count the number of equal pixels at the beginning of the pixelstring.
 static size_t prefix_length(const DataFile::pixels_t &pixels, size_t pos)
@@ -185,10 +210,13 @@ static DictTreeNode* construct_tree(const std::vector<DataFile::dictentry_t> &di
         root->SetChild(j, node);
     }
     
-    // Populate the rest of the entries
-    size_t i = 0;
+    // Populate the actual dictionary entries
+    size_t i = DICT_START;
     for (DataFile::dictentry_t d : dictionary)
     {
+        if (!d.replacement.size())
+            break;
+        
         DictTreeNode* node = root;
         for (uint8_t p : d.replacement)
         {
@@ -204,10 +232,36 @@ static DictTreeNode* construct_tree(const std::vector<DataFile::dictentry_t> &di
         
         if (node->GetIndex() < 0)
         {
-            node->SetIndex(i + DICT_START);
+            node->SetIndex(i);
             node->SetRef(d.ref_encode);
         }
         i++;
+    }
+    
+    // Populate the fill entries for rest of dictionary
+    for (; i < 256; i++)
+    {
+        size_t bitcount = fillentry_bitcount(i);
+        
+        DictTreeNode* node = root;
+        uint8_t byte = i - DICT_START7BIT;
+        for (size_t j = 0; j < bitcount; j++)
+        {
+            uint8_t p = (byte & (1 << j)) ? 15 : 0;
+            DictTreeNode* branch = node->GetChild(p);
+            if (!branch)
+            {
+                branch = storage.allocate();
+                node->SetChild(p, branch);
+            }
+            node = branch;
+        }
+        
+        if (node->GetIndex() < 0)
+        {
+            node->SetIndex(i);
+            node->SetRef(false);
+        }
     }
     
     return root;
@@ -302,6 +356,7 @@ size_t estimate_tree_node_count(const std::vector<DataFile::dictentry_t> &dict)
     {
         count += d.replacement.size();
     }
+    count += 128 * 7; // Fill entries
     return count;
 }
 
@@ -448,13 +503,24 @@ std::unique_ptr<DataFile::pixels_t> decode_glyph(
                 }
             }
         }
-        else
+        else if (ref - DICT_START - encoded.rle_dictionary.size() < encoded.ref_dictionary.size())
         {
             size_t index = ref - DICT_START - encoded.rle_dictionary.size();
             std::unique_ptr<DataFile::pixels_t> part =
                 decode_glyph(encoded, encoded.ref_dictionary.at(index),
                              fontinfo);
             result->insert(result->end(), part->begin(), part->end());
+        }
+        else
+        {
+            size_t bitcount = fillentry_bitcount(ref);
+            
+            uint8_t byte = ref - DICT_START7BIT;
+            for (size_t i = 0; i < bitcount; i++)
+            {
+                uint8_t p = (byte & (1 << i)) ? 15 : 0;
+                result->push_back(p);
+            }
         }
     }
     
