@@ -11,6 +11,9 @@ OBJS = bdf_import.o freetype_import.o importtools.o \
 
 all: run_unittests mcufont
 
+clean:
+	rm -f unittests mcufont $(OBJS)
+
 mcufont: main.o $(OBJS)
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 

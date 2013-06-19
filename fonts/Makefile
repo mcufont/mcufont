@@ -10,6 +10,9 @@ CHARS = 0-255 0x2010-0x2015
 
 all: $(FONTS:=.c) fonts.h
 
+clean:
+	rm -f $(FONTS:=.c) $(FONTS:=.h) $(FONTS:=.dat)
+
 fonts.h: $(FONTS:=.h)
 	echo $(foreach font,$(FONTS),'\n#include "'$(font)'.h"') > $@
 
