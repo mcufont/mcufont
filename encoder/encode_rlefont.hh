@@ -84,7 +84,7 @@ public:
         
         // Expected values for glyphs
         encoded_font_t::refstring_t glyph0 = {27, 27, 27};
-        encoded_font_t::refstring_t glyph1 = {24, 25, 132, 0, 14};
+        encoded_font_t::refstring_t glyph1 = {24, 0, 132, 25, 14};
         encoded_font_t::refstring_t glyph2 = {228, 26, 244, 14, 14, 14, 228, 26, 16};
         
         TS_ASSERT_EQUALS(e->glyphs.at(0), glyph0);

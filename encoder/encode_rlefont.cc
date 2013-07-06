@@ -111,14 +111,16 @@ static encoded_font_t::rlestring_t encode_rle(const DataFile::pixels_t &pixels)
 }
 
 // We use a tree structure to represent the dictionary entries.
-// Using this tree, we can perform a greedy search for the matching entries.
-// The resulting encoding may not be 100% optimal, but the algorithm is fast.
+// Using this tree, we can perform a combined Aho-Corasick string matching
+// and breadth-first search to find the optimal encoding of glyph data.
 class DictTreeNode
 {
 public:
     constexpr DictTreeNode():
         m_index(-1),
         m_ref(false),
+        m_length(0),
+        m_suffix(nullptr),
         m_child0(nullptr),
         m_child15(nullptr)
         {}
@@ -155,14 +157,32 @@ public:
             return m_children[p - 1];
     }
     
+    bool HasIntermediateChildren() const { return m_children != nullptr; }
+    
     int GetIndex() const { return m_index; }
     void SetIndex(int index) { m_index = index; }
     bool GetRef() const { return m_ref; }
     void SetRef(bool ref) { m_ref = ref; }
+    size_t GetLength() const { return m_length; }
+    void SetLength(size_t length) { m_length = length; }
+    DictTreeNode *GetSuffix() const { return m_suffix; }
+    void SetSuffix(DictTreeNode *suffix) { m_suffix = suffix; }
     
 private:
-    int m_index; // Index of dictionary entry or -1 if just a intermediate node.
-    bool m_ref; // True for ref-encoded dictionary entries.
+    // Index of dictionary entry or -1 if just a intermediate node.
+    int m_index;
+    
+    // True for ref-encoded dictionary entries. Used to avoid recursion when
+    // encoding them.
+    bool m_ref;
+    
+    // Length of the corresponding dictionary entry replacement.
+    // Equals the distance from the tree root.
+    size_t m_length;
+    
+    // Pointer to the longest suffix of this entry that exists in the
+    // dictionary.
+    DictTreeNode *m_suffix;
     
     // Most tree nodes will only ever contains children for 0 or 15.
     // Therefore the array for other nodes is allocated only on demand.
@@ -197,6 +217,90 @@ private:
     size_t m_left;
 };
 
+// Add a new dictionary entry to the tree. Adds the intermediate nodes, but
+// does not yet fill the suffix pointers.
+static DictTreeNode* add_tree_entry(const DataFile::pixels_t &entry, int index,
+                                    bool ref_encoded, DictTreeNode *root,
+                                    TreeAllocator &storage)
+{
+    DictTreeNode* node = root;
+    for (uint8_t p : entry)
+    {
+        DictTreeNode* branch = node->GetChild(p);
+        if (!branch)
+        {
+            branch = storage.allocate();
+            node->SetChild(p, branch);
+        }
+        
+        node = branch;
+    }
+    
+    // Replace the entry if it either does not yet have an encoding, or if
+    // the new entry is non-ref (i.e. can be used in more situations).
+    if (node->GetIndex() < 0 || (node->GetRef() && !ref_encoded))
+    {
+        node->SetIndex(index);
+        node->SetRef(ref_encoded);
+        node->SetLength(entry.size());
+    }
+    
+    return node;
+}
+
+// Walk the tree and find if the entry exists in the tree. If it does,
+// returns a pointer to it, otherwise nullptr.
+static DictTreeNode *find_tree_node(DataFile::pixels_t::const_iterator begin,
+                                    DataFile::pixels_t::const_iterator end,
+                                    DictTreeNode *root)
+{
+    DictTreeNode* node = root;
+    while (begin != end)
+    {
+        uint8_t pixel = *begin++;
+        node = node->GetChild(pixel);
+        
+        if (!node)
+            return nullptr;
+    }
+    
+    return node;
+}
+
+// Fill in the suffix pointers recursively for the given subtree.
+static void fill_tree_suffixes(DictTreeNode *root, DictTreeNode *subtree,
+    const DataFile::pixels_t &entry)
+{
+    for (size_t i = 1; i < entry.size(); i++)
+    {
+        DictTreeNode *node = find_tree_node(entry.begin() + i, entry.end(), root);
+        if (node)
+        {
+            subtree->SetSuffix(node);
+            break;
+        }
+    }
+    
+    if (!subtree->GetSuffix())
+        subtree->SetSuffix(root);
+    
+    DataFile::pixels_t newentry(entry);
+    newentry.resize(entry.size() + 1);
+    for (uint8_t i = 0; i < 16; i++)
+    {
+        // Speed-up for the common case of 0 and 15 alphas.
+        if (i == 1 && !subtree->HasIntermediateChildren())
+            i += 14;
+        
+        DictTreeNode *child = subtree->GetChild(i);
+        if (child)
+        {
+            newentry.at(entry.size()) = i;
+            fill_tree_suffixes(root, child, newentry);
+        }
+    }
+}
+
 // Construct a lookup tree from the dictionary entries.
 static DictTreeNode* construct_tree(const std::vector<DataFile::dictentry_t> &dictionary, TreeAllocator &storage)
 {
@@ -207,6 +311,8 @@ static DictTreeNode* construct_tree(const std::vector<DataFile::dictentry_t> &di
     {
         DictTreeNode *node = storage.allocate();
         node->SetIndex(j);
+        node->SetRef(false);
+        node->SetLength(1);
         root->SetChild(j, node);
     }
     
@@ -217,119 +323,122 @@ static DictTreeNode* construct_tree(const std::vector<DataFile::dictentry_t> &di
         if (!d.replacement.size())
             break;
         
-        DictTreeNode* node = root;
-        for (uint8_t p : d.replacement)
-        {
-            DictTreeNode* branch = node->GetChild(p);
-            if (!branch)
-            {
-                branch = storage.allocate();
-                node->SetChild(p, branch);
-            }
-            
-            node = branch;
-        }
-        
-        if (node->GetIndex() < 0)
-        {
-            node->SetIndex(i);
-            node->SetRef(d.ref_encode);
-        }
+        add_tree_entry(d.replacement, i, d.ref_encode, root, storage);
         i++;
     }
     
     // Populate the fill entries for rest of dictionary
     for (; i < 256; i++)
     {
+        DataFile::pixels_t pixels;
         size_t bitcount = fillentry_bitcount(i);
-        
-        DictTreeNode* node = root;
         uint8_t byte = i - DICT_START7BIT;
         for (size_t j = 0; j < bitcount; j++)
         {
             uint8_t p = (byte & (1 << j)) ? 15 : 0;
-            DictTreeNode* branch = node->GetChild(p);
-            if (!branch)
-            {
-                branch = storage.allocate();
-                node->SetChild(p, branch);
-            }
-            node = branch;
+            pixels.push_back(p);
         }
         
-        if (node->GetIndex() < 0)
-        {
-            node->SetIndex(i);
-            node->SetRef(false);
-        }
+        add_tree_entry(pixels, i, false, root, storage);
     }
+    
+    DataFile::pixels_t nullentry;
+    fill_tree_suffixes(root, root, nullentry);
     
     return root;
 }
 
-// Walk the tree as far as possible following the given pixel string iterator.
-// Returns number of pixels encoded, and index is set to the dictionary reference.
-static size_t walk_tree(const DictTreeNode *tree,
-                        DataFile::pixels_t::const_iterator pixels,
-                        DataFile::pixels_t::const_iterator pixelsend,
-                        int &index, bool is_glyph)
+// Structure for keeping track of the shortest encoding to reach particular
+// point of the pixel string.
+struct encoding_link_t
 {
-    size_t best_length = 0;
-    size_t length = 0;
-    index = -1;
+    // Index of the position prior to the last dictionary entry.
+    size_t previous;
     
-    const DictTreeNode* node = tree;
-    while (pixels != pixelsend)
-    {
-        uint8_t pixel = *pixels++;
-        node = node->GetChild(pixel);
-        
-        if (!node)
-            break;
-        
-        length++;
-        
-        if (is_glyph || !node->GetRef())
-        {
-            if (node->GetIndex() >= 0)
-            {
-                index = node->GetIndex();
-                best_length = length;
-            }
-        }
-    }
+    // Index of the dictionary entry that brings us to this point.
+    int index;
     
-    if (index < 0)
-        throw std::logic_error("walk_tree failed to find a valid encoding");
+    // Number of links to get here from the start of the string.
+    size_t length;
     
-    return best_length;
-}
+    constexpr encoding_link_t(): previous(0), index(-1), length(9999999) {}
+};
 
 // Perform the reference encoding for a glyph entry.
 static encoded_font_t::refstring_t encode_ref(const DataFile::pixels_t &pixels,
-                                              const DictTreeNode *tree,
+                                              const DictTreeNode *root,
                                               bool is_glyph)
 {
+    // Chain of encodings. Each entry in this array corresponds to a position
+    // in the pixel string.
+    std::unique_ptr<encoding_link_t[]> chain(new encoding_link_t[pixels.size() + 1]);
+    
+    chain[0].previous = 0;
+    chain[0].index = 0;
+    chain[0].length = 0;
+    
+    // Read the pixels one-by-one and update the encoding links accordingly.
+    const DictTreeNode *node = root;
+    for (size_t pos = 0; pos < pixels.size(); pos++)
+    {
+        uint8_t pixel = pixels.at(pos);
+        const DictTreeNode *branch = node->GetChild(pixel);
+        
+        while (!branch)
+        {
+            // Cannot expand this sequence, defer to suffix.
+            node = node->GetSuffix();
+            branch = node->GetChild(pixel);
+        }
+        
+        node = branch;
+        
+        // We have arrived at a new node, add it and any proper suffixes to
+        // the link chain.
+        const DictTreeNode *suffix = node;
+        while (suffix != root)
+        {
+            if (suffix->GetIndex() >= 0 && (is_glyph || !suffix->GetRef()))
+            {
+                encoding_link_t link;
+                link.previous = pos + 1 - suffix->GetLength();
+                link.index = suffix->GetIndex();
+                link.length = chain[link.previous].length + 1;
+                
+                if (link.length < chain[pos + 1].length)
+                    chain[pos + 1] = link;
+            }
+            suffix = suffix->GetSuffix();
+        }
+    }
+    
+    // Check if we can shorten the final encoding using REF_FILLZEROS.
+    for (size_t pos = pixels.size() - 1; pos > 0; pos--)
+    {
+        if (pixels.at(pos) != 0)
+            break;
+        
+        encoding_link_t link;
+        link.previous = pos;
+        link.index = REF_FILLZEROS;
+        link.length = chain[pos].length + 1;
+        
+        if (link.length <= chain[pixels.size()].length)
+            chain[pixels.size()] = link;
+    }
+    
+    // Backtrack from the final link back to the start and construct the
+    // encoded string.
     encoded_font_t::refstring_t result;
+    size_t len = chain[pixels.size()].length;
+    result.resize(len);
     
-    // Strip any zeroes from end
-    size_t end = pixels.size();
-    
-    if (is_glyph)
+    size_t pos = pixels.size();
+    for (size_t i = len; i > 0; i--)
     {
-        while (end > 0 && pixels.at(end - 1) == 0) end--;
+        result.at(i - 1) = chain[pos].index;
+        pos = chain[pos].previous;
     }
-    
-    size_t i = 0;
-    while (i < end)
-    {
-        int index;
-        i += walk_tree(tree, pixels.begin() + i, pixels.end(), index, is_glyph);
-        result.push_back(index);
-    }
-    
-    if (i < pixels.size())
-        result.push_back(REF_FILLZEROS);
     
     return result;
 }
