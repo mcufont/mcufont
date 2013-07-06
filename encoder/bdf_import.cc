@@ -143,6 +143,8 @@ std::unique_ptr<DataFile> LoadBDF(std::istream &file)
     eliminate_duplicates(glyphtable);
     crop_glyphs(glyphtable, fontinfo);
     
+    fontinfo.line_height = fontinfo.max_height;
+    
     std::unique_ptr<DataFile> result(new DataFile(
         dictionary, glyphtable, fontinfo));
     return result;

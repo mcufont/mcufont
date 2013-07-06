@@ -4,6 +4,8 @@
 #include <cctype>
 #include <stdexcept>
 
+#define DATAFILE_FORMAT_VERSION 1
+
 DataFile::DataFile(const std::vector<dictentry_t> &dictionary,
                    const std::vector<glyphentry_t> &glyphs,
                    const fontinfo_t &fontinfo):
@@ -18,12 +20,13 @@ DataFile::DataFile(const std::vector<dictentry_t> &dictionary,
 
 void DataFile::Save(std::ostream &file) const
 {
-    file << "Version 1" << std::endl;
+    file << "Version " << DATAFILE_FORMAT_VERSION << std::endl;
     file << "FontName " << m_fontinfo.name << std::endl;
     file << "MaxWidth " << m_fontinfo.max_width << std::endl;
     file << "MaxHeight " << m_fontinfo.max_height << std::endl;
     file << "BaselineX " << m_fontinfo.baseline_x << std::endl;
     file << "BaselineY " << m_fontinfo.baseline_y << std::endl;
+    file << "LineHeight " << m_fontinfo.line_height << std::endl;
     file << "RandomSeed " << m_seed << std::endl;
     
     for (const dictentry_t &d : m_dictionary)
@@ -88,6 +91,10 @@ std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
         {
             input >> fontinfo.baseline_y;
         }
+        else if (tag == "LineHeight")
+        {
+            input >> fontinfo.line_height;
+        }
         else if (tag == "RandomSeed")
         {
             input >> seed;
@@ -118,7 +125,7 @@ std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
         }
     }
     
-    if (version != 1)
+    if (version != DATAFILE_FORMAT_VERSION)
     {
         return std::unique_ptr<DataFile>(nullptr);
     }

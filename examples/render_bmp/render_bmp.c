@@ -175,7 +175,7 @@ static bool line_callback(const char *line, uint16_t count, void *state)
                           s->options->alignment, line, count,
                           pixel_callback, state);
     }
-    s->y += s->font->height;
+    s->y += s->font->line_height;
     return true;
 }
 

@@ -96,6 +96,7 @@ std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size, bool bw)
     fontinfo.max_height = topx(face->bbox.yMax - face->bbox.yMin) + 8;
     fontinfo.baseline_x = topx(-face->bbox.xMin) + 4;
     fontinfo.baseline_y = topx(face->bbox.yMax) + 4;
+    fontinfo.line_height = topx(face->height);
     
     FT_Int32 loadmode = FT_LOAD_TARGET_NORMAL | FT_LOAD_RENDER;
     

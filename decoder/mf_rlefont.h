@@ -8,6 +8,13 @@
 
 #include "mf_encoding.h"
 
+/* Versions of the RLE font format that are supported. */
+#define MF_RLEFONT_VERSION_1_SUPPORTED 1
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Structure for a range of characters. This implements a sparse storage of
  * character indices, so that you can e.g. pick a 100 characters in the middle
  * of the UTF16 range and just store them. */
@@ -29,6 +36,9 @@ struct mf_char_range_s
 /* Structure for a single encoded font. */
 struct mf_rlefont_s
 {
+    /* Version of the font definition used. */
+    const uint8_t version;
+    
     /* Full name of the font, comes from the original font file. */
     const char *full_name;
     
@@ -67,6 +77,9 @@ struct mf_rlefont_s
     /* Location of the text baseline relative to character. */
     uint8_t baseline_x;
     uint8_t baseline_y;
+    
+    /* Line height of the font (vertical advance). */
+    uint8_t line_height;
 };
 
 /* Lookup structure for searching fonts by name. */

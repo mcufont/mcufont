@@ -6,6 +6,8 @@
 #include <string>
 #include <cctype>
 
+#define RLEFONT_FORMAT_VERSION 1
+
 // Convert a file name to a valid C identifier
 static std::string to_identifier(std::string name)
 {
@@ -229,6 +231,11 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     out << "#include \"" << name << ".h\"" << std::endl;
     out << std::endl;
     
+    out << "#ifndef MF_RLEFONT_VERSION_" << RLEFONT_FORMAT_VERSION << "_SUPPORTED" << std::endl;
+    out << "#error The font file is not compatible with this version of mcufont." << std::endl;
+    out << "#endif" << std::endl;
+    out << std::endl;
+    
     // Write out the dictionary entries
     encode_dictionary(out, datafile, *encoded);
     
@@ -253,6 +260,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     
     // Pull it all together in the rlefont_s structure.
     out << "const struct mf_rlefont_s mf_rlefont_" << name << " = {" << std::endl;
+    out << "    " << RLEFONT_FORMAT_VERSION << ", /* version */" << std::endl;
     out << "    " << "\"" << datafile.GetFontInfo().name << "\"," << std::endl;
     out << "    " << "\"" << name << "\"," << std::endl;
     out << "    " << "dictionary_data," << std::endl;
@@ -266,6 +274,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     out << "    " << datafile.GetFontInfo().max_height << ", /* height */" << std::endl;
     out << "    " << datafile.GetFontInfo().baseline_x << ", /* baseline x */" << std::endl;
     out << "    " << datafile.GetFontInfo().baseline_y << ", /* baseline y */" << std::endl;
+    out << "    " << datafile.GetFontInfo().line_height << ", /* line height */" << std::endl;
     out << "};" << std::endl;
 }
 
