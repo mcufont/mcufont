@@ -50,7 +50,7 @@ int8_t mf_compute_kerning(const struct mf_rlefont_s *font,
     int16_t normal_space, adjust, max_adjust;
     
     /* Compute the height of one kerning zone in pixels */
-    i = font->height / MF_KERNING_ZONES;
+    i = (font->height + MF_KERNING_ZONES - 1) / MF_KERNING_ZONES;
     if (i < 1) i = 1;
     
     /* Initialize structures */
