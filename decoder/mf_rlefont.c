@@ -75,6 +75,17 @@ static void write_pixels(struct renderstate_r *rstate, uint16_t count,
     }
 }
 
+/* Skip the given number of pixels (0 alpha) */
+static void skip_pixels(struct renderstate_r *rstate, uint8_t count)
+{
+    rstate->x += count;
+    while (rstate->x >= rstate->x_end)
+    {
+        rstate->x -= rstate->x_end - rstate->x_begin;
+        rstate->y++;
+    }
+}
+
 /* Decode and write out a RLE-encoded dictionary entry. */
 static void write_rle_dictentry(const struct mf_rlefont_s *font,
                                 struct renderstate_r *rstate,
@@ -89,11 +100,11 @@ static void write_rle_dictentry(const struct mf_rlefont_s *font,
         uint8_t code = font->dictionary_data[offset + i];
         if ((code & RLE_CODEMASK) == RLE_ZEROS)
         {
-            write_pixels(rstate, code & RLE_VALMASK, 0);
+            skip_pixels(rstate, code & RLE_VALMASK);
         }
         else if ((code & RLE_CODEMASK) == RLE_64ZEROS)
         {
-            write_pixels(rstate, ((code & RLE_VALMASK) + 1) * 64, 0);
+            skip_pixels(rstate, ((code & RLE_VALMASK) + 1) * 64);
         }
         else if ((code & RLE_CODEMASK) == RLE_ONES)
         {
@@ -118,12 +129,10 @@ static void write_ref_codeword(const struct mf_rlefont_s *font,
     {
         write_pixels(rstate, 1, 0x10 * code);
     }
-    else if (code == 16)
+    else if (code == REF_FILLZEROS)
     {
-        uint16_t remaining;
-        remaining = (rstate->y_end - rstate->y) * font->width
-                    - (rstate->x - rstate->x_begin);
-        write_pixels(rstate, remaining, 0);
+        /* Fill with zeroes to end */
+        rstate->y = rstate->y_end;
     }
     else if (code < DICT_START)
     {
