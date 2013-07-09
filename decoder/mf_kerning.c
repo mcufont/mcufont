@@ -42,7 +42,7 @@ static int16_t min16(int16_t a, int16_t b) { return (a < b) ? a : b; }
 static int16_t max16(int16_t a, int16_t b) { return (a > b) ? a : b; }
 static int16_t avg16(int16_t a, int16_t b) { return (a + b) / 2; }
 
-int8_t mf_compute_kerning(const struct mf_rlefont_s *font,
+int8_t mf_compute_kerning(const struct mf_font_s *font,
                           mf_char c1, mf_char c2)
 {
     struct kerning_state_s leftedge, rightedge;

@@ -16,7 +16,7 @@ struct wordlen_s
 
 /* Take the next word from the string and compute its width.
  * Returns true if the word ends in a linebreak. */
-static bool get_wordlen(const struct mf_rlefont_s *font, mf_str *text,
+static bool get_wordlen(const struct mf_font_s *font, mf_str *text,
                         struct wordlen_s *result)
 {
     mf_char c;
@@ -70,7 +70,7 @@ struct linelen_s
 
 /* Append word onto the line if it fits. If it would overflow, don't add and
  * return false. */
-static bool append_word(const struct mf_rlefont_s *font, int16_t width,
+static bool append_word(const struct mf_font_s *font, int16_t width,
                         struct linelen_s *current, mf_str *text)
 {
     mf_str tmp = *text;
@@ -96,7 +96,7 @@ static bool append_word(const struct mf_rlefont_s *font, int16_t width,
 }
 
 /* Append a character to the line if it fits. */
-static bool append_char(const struct mf_rlefont_s *font, int16_t width,
+static bool append_char(const struct mf_font_s *font, int16_t width,
                         struct linelen_s *current, mf_str *text)
 {
     mf_str tmp = *text;
@@ -159,7 +159,7 @@ static void tune_lines(struct linelen_s *current, struct linelen_s *previous,
     }
 }
 
-void mf_wordwrap(const struct mf_rlefont_s *font, int16_t width,
+void mf_wordwrap(const struct mf_font_s *font, int16_t width,
                  mf_str text, mf_line_callback_t callback, void *state)
 {
     struct linelen_s current = {};

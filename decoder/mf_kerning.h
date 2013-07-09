@@ -18,10 +18,10 @@
  * Returns the offset to add to the x position for c2.
  */
 #if MF_USE_KERNING
-MF_EXTERN int8_t mf_compute_kerning(const struct mf_rlefont_s *font,
+MF_EXTERN int8_t mf_compute_kerning(const struct mf_font_s *font,
                                     mf_char c1, mf_char c2);
 #else
-static int8_t mf_compute_kerning(const struct mf_rlefont_s *font,
+static int8_t mf_compute_kerning(const struct mf_font_s *font,
                                  mf_char c1, mf_char c2)
 { return 0; }
 #endif

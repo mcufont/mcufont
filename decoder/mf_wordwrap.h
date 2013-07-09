@@ -26,7 +26,7 @@ typedef bool (*mf_line_callback_t) (mf_str line, uint16_t count,
  * text:  Pointer to the start of the text to process.
  * state: Free variable for caller to use (can be NULL).
  */
-MF_EXTERN void mf_wordwrap(const struct mf_rlefont_s *font, int16_t width,
+MF_EXTERN void mf_wordwrap(const struct mf_font_s *font, int16_t width,
                            mf_str text, mf_line_callback_t callback, void *state);
               
 #endif

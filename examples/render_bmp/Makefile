@@ -11,12 +11,13 @@ DECODERDIR = ../../decoder
 FONTS = ../../fonts/*.c
 
 # List of required decoder components
-DECODER = $(DECODERDIR)/mf_rlefont.c \
-          $(DECODERDIR)/mf_encoding.c \
+DECODER = $(DECODERDIR)/mf_encoding.c \
+          $(DECODERDIR)/mf_font.c \
+          $(DECODERDIR)/mf_justify.c \
           $(DECODERDIR)/mf_kerning.c \
-          $(DECODERDIR)/mf_wordwrap.c \
-          $(DECODERDIR)/mf_justify.c
-
+          $(DECODERDIR)/mf_rlefont.c \
+          $(DECODERDIR)/mf_wordwrap.c
+          
 all: render_bmp
 
 render_bmp: render_bmp.c write_bmp.c $(DECODER) $(FONTS)

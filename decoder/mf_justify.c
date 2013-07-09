@@ -9,7 +9,7 @@ static bool is_justify_space(uint16_t c)
 }
 
 /* Round the X coordinate up to the nearest tab stop. */
-static int16_t mf_round_to_tab(const struct mf_rlefont_s *font,
+static int16_t mf_round_to_tab(const struct mf_font_s *font,
                                int16_t x0, int16_t x)
 {
     int16_t spacew, tabw, dx;
@@ -27,7 +27,7 @@ static int16_t mf_round_to_tab(const struct mf_rlefont_s *font,
     return x;
 }
 
-int16_t mf_get_string_width(const struct mf_rlefont_s *font, mf_str text,
+int16_t mf_get_string_width(const struct mf_font_s *font, mf_str text,
                             uint16_t count, bool kern)
 {
     int16_t result = 0;
@@ -82,7 +82,7 @@ static uint16_t strip_spaces(mf_str text, uint16_t count, mf_char *last_char)
 }
 
 /* Render left-aligned string, left edge at x0. */
-static void render_left(const struct mf_rlefont_s *font,
+static void render_left(const struct mf_font_s *font,
                         int16_t x0, int16_t y0,
                         mf_str text, uint16_t count,
                         mf_pixel_callback_t callback, void *state)
@@ -111,7 +111,7 @@ static void render_left(const struct mf_rlefont_s *font,
 }
 
 /* Render right-aligned string, right edge at x0. */
-static void render_right(const struct mf_rlefont_s *font,
+static void render_right(const struct mf_font_s *font,
                          int16_t x0, int16_t y0,
                          mf_str text, uint16_t count,
                          mf_pixel_callback_t callback, void *state)
@@ -141,7 +141,7 @@ static void render_right(const struct mf_rlefont_s *font,
     }
 }
 
-void mf_render_aligned(const struct mf_rlefont_s *font,
+void mf_render_aligned(const struct mf_font_s *font,
                        int16_t x0, int16_t y0,
                        enum mf_align_t align,
                        mf_str text, uint16_t count,
@@ -178,7 +178,7 @@ static uint16_t count_spaces(mf_str text, uint16_t count)
     return spaces;
 }
 
-void mf_render_justified(const struct mf_rlefont_s *font,
+void mf_render_justified(const struct mf_font_s *font,
                          int16_t x0, int16_t y0, int16_t width,
                          mf_str text, uint16_t count,
                          mf_pixel_callback_t callback, void *state)

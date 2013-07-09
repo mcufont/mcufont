@@ -132,7 +132,7 @@ typedef struct {
     uint16_t width;
     uint16_t height;
     uint16_t y;
-    const struct mf_rlefont_s *font;
+    const struct mf_font_s *font;
 } state_t;
 
 /* Callback to write to a memory buffer. */
@@ -191,7 +191,7 @@ bool count_lines(const char *line, uint16_t count, void *state)
 int main(int argc, const char **argv)
 {
     int height;
-    const struct mf_rlefont_s *font;
+    const struct mf_font_s *font;
     options_t options;
     state_t state = {};
     

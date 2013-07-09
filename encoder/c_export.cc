@@ -6,7 +6,7 @@
 #include <string>
 #include <cctype>
 
-#define RLEFONT_FORMAT_VERSION 1
+#define RLEFONT_FORMAT_VERSION 2
 
 // Convert a file name to a valid C identifier
 static std::string to_identifier(std::string name)
@@ -150,14 +150,14 @@ void write_header(std::ostream &out, std::string name, const DataFile &datafile)
     out << "extern const struct mf_rlefont_s mf_rlefont_" << name << ";" << std::endl;
     out << std::endl;
     out << "/* List entry for searching fonts by name. */" << std::endl;
-    out << "static const struct mf_rlefont_list_s mf_rlefont_" << name << "_listentry = {" << std::endl;
+    out << "static const struct mf_font_list_s mf_rlefont_" << name << "_listentry = {" << std::endl;
     out << "#   ifndef MF_INCLUDED_FONTS" << std::endl;
     out << "    0," << std::endl;
     out << "#   else" << std::endl;
     out << "    MF_INCLUDED_FONTS," << std::endl;
     out << "#   undef MF_INCLUDED_FONTS" << std::endl;
     out << "#   endif" << std::endl;
-    out << "    &mf_rlefont_" << name << std::endl;
+    out << "    (struct mf_font_s*)&mf_rlefont_" << name << std::endl;
     out << "};" << std::endl;
     out << "#define MF_INCLUDED_FONTS (&mf_rlefont_" << name << "_listentry)" << std::endl;
     
@@ -247,7 +247,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     }
     
     // Write out a table describing the character ranges
-    out << "static const struct mf_char_range_s char_ranges[] = {" << std::endl;
+    out << "static const struct mf_rlefont_char_range_s char_ranges[] = {" << std::endl;
     for (size_t i = 0; i < ranges.size(); i++)
     {
         out << "    {" << ranges.at(i).first_char
@@ -260,21 +260,26 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     
     // Pull it all together in the rlefont_s structure.
     out << "const struct mf_rlefont_s mf_rlefont_" << name << " = {" << std::endl;
-    out << "    " << RLEFONT_FORMAT_VERSION << ", /* version */" << std::endl;
+    out << "    {" << std::endl;
     out << "    " << "\"" << datafile.GetFontInfo().name << "\"," << std::endl;
     out << "    " << "\"" << name << "\"," << std::endl;
-    out << "    " << "dictionary_data," << std::endl;
-    out << "    " << "dictionary_offsets," << std::endl;
-    out << "    " << encoded->rle_dictionary.size() << ", /* rle dict count */" << std::endl;
-    out << "    " << encoded->ref_dictionary.size() + encoded->rle_dictionary.size() << ", /* total dict count */" << std::endl;
-    out << "    " << "&glyph_data_0[0], /* default glyph */" << std::endl; // FIXME: Should use the real default glyph from BDF
-    out << "    " << ranges.size() << ", /* char range count */" << std::endl;
-    out << "    " << "char_ranges," << std::endl;
     out << "    " << datafile.GetFontInfo().max_width << ", /* width */" << std::endl;
     out << "    " << datafile.GetFontInfo().max_height << ", /* height */" << std::endl;
     out << "    " << datafile.GetFontInfo().baseline_x << ", /* baseline x */" << std::endl;
     out << "    " << datafile.GetFontInfo().baseline_y << ", /* baseline y */" << std::endl;
     out << "    " << datafile.GetFontInfo().line_height << ", /* line height */" << std::endl;
+    out << "    " << "0, /* fallback character */" << std::endl;
+    out << "    " << "&mf_rlefont_character_width," << std::endl;
+    out << "    " << "&mf_rlefont_render_character," << std::endl;
+    out << "    }," << std::endl;
+    
+    out << "    " << RLEFONT_FORMAT_VERSION << ", /* version */" << std::endl;
+    out << "    " << "dictionary_data," << std::endl;
+    out << "    " << "dictionary_offsets," << std::endl;
+    out << "    " << encoded->rle_dictionary.size() << ", /* rle dict count */" << std::endl;
+    out << "    " << encoded->ref_dictionary.size() + encoded->rle_dictionary.size() << ", /* total dict count */" << std::endl;
+    out << "    " << ranges.size() << ", /* char range count */" << std::endl;
+    out << "    " << "char_ranges," << std::endl;
     out << "};" << std::endl;
 }
 

@@ -22,7 +22,7 @@ static const uint8_t *find_glyph(const struct mf_rlefont_s *font,
                                  uint16_t character)
 {
    unsigned i, index;
-   const struct mf_char_range_s *range;
+   const struct mf_rlefont_char_range_s *range;
    for (i = 0; i < font->char_range_count; i++)
    {
        range = &font->char_ranges[i];
@@ -34,7 +34,7 @@ static const uint8_t *find_glyph(const struct mf_rlefont_s *font,
        }
    }
 
-   return font->default_glyph;
+   return 0;
 }
 
 /* Structure to keep track of coordinates of the next pixel to be written,
@@ -176,11 +176,11 @@ static void write_glyph_codeword(const struct mf_rlefont_s *font,
 }
 
 
-uint8_t mf_render_character(const struct mf_rlefont_s *font,
-                            int16_t x0, int16_t y0,
-                            uint16_t character,
-                            mf_pixel_callback_t callback,
-                            void *state)
+uint8_t mf_rlefont_render_character(const struct mf_font_s *font,
+                                    int16_t x0, int16_t y0,
+                                    uint16_t character,
+                                    mf_pixel_callback_t callback,
+                                    void *state)
 {
     const uint8_t *p;
     uint8_t width;
@@ -194,50 +194,26 @@ uint8_t mf_render_character(const struct mf_rlefont_s *font,
     rstate.callback = callback;
     rstate.state = state;
     
-    p = find_glyph(font, character);
+    p = find_glyph((struct mf_rlefont_s*)font, character);
+    if (!p)
+        return 0;
+    
     width = *p++;
     while (rstate.y < rstate.y_end)
     {
-        write_glyph_codeword(font, &rstate, *p++);
+        write_glyph_codeword((struct mf_rlefont_s*)font, &rstate, *p++);
     }
     
     return width;
 }
 
-uint8_t mf_character_width(const struct mf_rlefont_s *font,
-                           uint16_t character)
+uint8_t mf_rlefont_character_width(const struct mf_font_s *font,
+                                   uint16_t character)
 {
-    return *find_glyph(font, character);
-}
-
-/* Avoids a dependency on libc */
-static uint8_t strequals(const char *a, const char *b)
-{
-    while (*a)
-    {
-        if (*a++ != *b++)
-            return 0;
-    }
-    return (!*b);
-}
-
-const struct mf_rlefont_s *mf_find_font(const char *name,
-                                        const struct mf_rlefont_list_s *fonts)
-{
-    const struct mf_rlefont_list_s *f;
-    f = fonts;
+    const uint8_t *p;
+    p = find_glyph((struct mf_rlefont_s*)font, character);
+    if (!p)
+        return 0;
     
-    while (f)
-    {
-        if (strequals(f->font->full_name, name) ||
-            strequals(f->font->short_name, name))
-        {
-            return f->font;
-        }
-        
-        f = f->next;
-    }
-    
-    return 0;
+    return *p;
 }
-

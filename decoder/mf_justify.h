@@ -22,7 +22,7 @@ enum mf_align_t
  * count:  Number of characters on the line or 0 to read until end of string.
  * kern:   True to consider kerning (slower).
  */
-MF_EXTERN int16_t mf_get_string_width(const struct mf_rlefont_s *font,
+MF_EXTERN int16_t mf_get_string_width(const struct mf_font_s *font,
                                       mf_str text, uint16_t count, bool kern);
 
 /* Render a single line of aligned text.
@@ -36,7 +36,7 @@ MF_EXTERN int16_t mf_get_string_width(const struct mf_rlefont_s *font,
  * callback: Callback to pass to render_character().
  * state:    Free variable for use in the callback.
  */
-MF_EXTERN void mf_render_aligned(const struct mf_rlefont_s *font,
+MF_EXTERN void mf_render_aligned(const struct mf_font_s *font,
                                  int16_t x0, int16_t y0,
                                  enum mf_align_t align,
                                  mf_str text, uint16_t count,
@@ -53,7 +53,7 @@ MF_EXTERN void mf_render_aligned(const struct mf_rlefont_s *font,
  * callback: Callback to pass to render_character().
  * state:    Free variable for use in the callback.
  */
-MF_EXTERN void mf_render_justified(const struct mf_rlefont_s *font,
+MF_EXTERN void mf_render_justified(const struct mf_font_s *font,
                                    int16_t x0, int16_t y0, int16_t width,
                                    mf_str text, uint16_t count,
                                    mf_pixel_callback_t callback, void *state);
