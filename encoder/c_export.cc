@@ -2,6 +2,7 @@
 #include <vector>
 #include <iomanip>
 #include <map>
+#include <set>
 #include <algorithm>
 #include <string>
 #include <cctype>
@@ -222,6 +223,33 @@ static void encode_character_range(std::ostream &out, const DataFile &datafile,
     write_table(out, offsets, "uint16_t", "glyph_offsets_" + std::to_string(range_index), 4);
 }
 
+// Select the character to use as a fallback.
+static int select_fallback_char(const DataFile &datafile)
+{
+    std::set<int> chars;
+    
+    size_t i = 0;
+    for (const DataFile::glyphentry_t &g: datafile.GetGlyphTable())
+    {
+        for (size_t c: g.chars)
+        {
+            chars.insert(c);
+        }
+        i++;
+    }
+    
+    if (chars.count(0xFFFD))
+        return 0xFFFD; // Unicode replacement character
+    
+    if (chars.count(0))
+        return 0; // Used by many BDF fonts as replacement char
+    
+    if (chars.count('?'))
+        return '?';
+    
+    return ' ';
+}
+
 void write_source(std::ostream &out, std::string name, const DataFile &datafile)
 {
     name = to_identifier(name);
@@ -268,7 +296,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     out << "    " << datafile.GetFontInfo().baseline_x << ", /* baseline x */" << std::endl;
     out << "    " << datafile.GetFontInfo().baseline_y << ", /* baseline y */" << std::endl;
     out << "    " << datafile.GetFontInfo().line_height << ", /* line height */" << std::endl;
-    out << "    " << "0, /* fallback character */" << std::endl;
+    out << "    " << select_fallback_char(datafile) << ", /* fallback character */" << std::endl;
     out << "    " << "&mf_rlefont_character_width," << std::endl;
     out << "    " << "&mf_rlefont_render_character," << std::endl;
     out << "    }," << std::endl;

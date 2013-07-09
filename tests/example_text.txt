@@ -16,3 +16,4 @@ Very_long_words_that_just_keep_going_and_going_for_many_lines_at_a_time_causing_
 
 Non breaking spaces — they will prevent line wrapping just as efficiently and cause cutoffs at random points of the line.
 
+Unknown characters: ㎔☠

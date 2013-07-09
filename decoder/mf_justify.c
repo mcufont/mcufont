@@ -117,7 +117,7 @@ static void render_left(const struct mf_font_s *font,
         if (c2 == '\t')
         {
             x = mf_round_to_tab(font, x0, x);
-            c1 = c2;
+            c1 = ' ';
             continue;
         }
         
@@ -155,7 +155,7 @@ static void render_right(const struct mf_font_s *font,
         if (c1 == '\t')
         {
             x = mf_round_to_prev_tab(font, x0, x);
-            c2 = c1;
+            c2 = ' ';
             continue;
         }
         
