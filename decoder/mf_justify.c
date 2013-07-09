@@ -27,6 +27,25 @@ static int16_t mf_round_to_tab(const struct mf_font_s *font,
     return x;
 }
 
+/* Round the X coordinate down to the nearest tab stop. */
+static int16_t mf_round_to_prev_tab(const struct mf_font_s *font,
+                                    int16_t x0, int16_t x)
+{
+    int16_t spacew, tabw, dx;
+    
+    spacew = mf_character_width(font, ' ');
+    tabw = spacew * MF_TABSIZE;
+    
+    /* Always atleast 1 space */
+    x -= spacew;
+    
+    /* Round to previous tab stop */
+    dx = x0 - x + font->baseline_x;
+    x -= tabw - (dx % tabw);
+    
+    return x;
+}
+
 int16_t mf_get_string_width(const struct mf_font_s *font, mf_str text,
                             uint16_t count, bool kern)
 {
@@ -131,8 +150,19 @@ static void render_right(const struct mf_font_s *font,
         mf_rewind(&text);
         tmp = text;
         c1 = mf_getchar(&tmp);
+        
+        /* Perform tab alignment */
+        if (c1 == '\t')
+        {
+            x = mf_round_to_prev_tab(font, x0, x);
+            c2 = c1;
+            continue;
+        }
+        
+        /* Apply the nominal character width */
         x -= mf_character_width(font, c1);
         
+        /* Apply kerning */
         if (c2 != 0)
             x -= mf_compute_kerning(font, c1, c2);
         

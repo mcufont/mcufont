@@ -64,7 +64,7 @@
  * space character in the current font.
  */
 #ifndef MF_TABSIZE
-#define MF_TABSIZE 8
+#define MF_TABSIZE 16
 #endif
 
 
