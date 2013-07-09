@@ -28,6 +28,13 @@
 #define MF_USE_KERNING 1
 #endif
 
+/* Enable or disable the advanced word wrap algorithm.
+ * If disabled, uses a simpler algorithm.
+ */
+#ifndef MF_USE_ADVANCED_WORDWRAP
+#define MF_USE_ADVANCED_WORDWRAP 1
+#endif
+
 /* Number of vertical zones to use when computing kerning.
  * Larger values give more accurate kerning, but are slower and use somewhat
  * more memory. There is no point to increase this beyond the height of the

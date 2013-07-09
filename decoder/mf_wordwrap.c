@@ -6,6 +6,8 @@ static bool is_wrap_space(uint16_t c)
     return c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '-';
 }
 
+#if MF_USE_ADVANCED_WORDWRAP
+
 /* Represents a single word and the whitespace after it. */
 struct wordlen_s
 {
@@ -212,3 +214,81 @@ void mf_wordwrap(const struct mf_font_s *font, int16_t width,
     if (current.chars)
         callback(current.start, current.chars, state);
 }
+
+#else
+
+#include <stdio.h>
+
+void mf_wordwrap(const struct mf_font_s *font, int16_t width,
+                 mf_str text, mf_line_callback_t callback, void *state)
+{
+    mf_str orig = text;
+    mf_str linestart;
+    
+    /* Current line width and character count */
+    int16_t lw_cur = 0, cc_cur = 0;
+    
+    /* Previous wrap point */
+    int16_t cc_prev;
+    mf_str ls_prev;
+    
+    linestart = text;
+    
+    while (*text)
+    {
+        cc_prev = 0;
+        ls_prev = text;
+    
+        while (*text)
+        {
+            mf_char c;
+            int16_t new_width;
+            mf_str tmp;
+            
+            tmp = text;
+            c = mf_getchar(&text);
+            new_width = lw_cur + mf_character_width(font, c);
+            
+            if (c == '\n')
+            {
+                cc_prev = cc_cur + 1;
+                ls_prev = text;
+                break;
+            }
+            
+            if (new_width > width)
+            {
+                text = tmp;
+                break;
+            }
+            
+            cc_cur++;
+            lw_cur = new_width;
+            
+            if (is_wrap_space(c))
+            {
+                cc_prev = cc_cur;
+                ls_prev = text;
+            }
+        }
+        
+        /* Handle unbreakable words */
+        if (cc_prev == 0)
+        {
+            cc_prev = cc_cur;
+            ls_prev = text;
+        }
+        
+        printf("pos %d\n", (int)(text - orig));
+        
+        if (!callback(linestart, cc_prev, state))
+            return;
+        
+        linestart = ls_prev;
+        text = linestart;
+        lw_cur = 0;
+        cc_cur = 0;
+    }
+}
+
+#endif
