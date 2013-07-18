@@ -213,7 +213,7 @@ int main(int argc, const char **argv)
     
     if (!font)
     {
-        printf("No such font: %s\n", argv[1]);
+        printf("No such font: %s\n", options.fontname);
         return 2;
     }
     

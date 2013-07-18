@@ -127,7 +127,7 @@ static void write_ref_codeword(const struct mf_rlefont_s *font,
 {
     if (code <= 15)
     {
-        write_pixels(rstate, 1, 0x10 * code);
+        write_pixels(rstate, 1, 0x11 * code);
     }
     else if (code == REF_FILLZEROS)
     {
