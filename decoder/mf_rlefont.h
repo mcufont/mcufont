@@ -1,6 +1,5 @@
-/* Type definitions and decoding functions for a font compression format using
- * run length encoding and dictionary compression. Font files are written
- * out as C source code by a generator program.
+/* A compressed font format based on run length encoding and dictionary
+ * compression.
  */
 
 #ifndef _MF_RLEFONT_H_
@@ -60,6 +59,7 @@ struct mf_rlefont_s
     const struct mf_rlefont_char_range_s *char_ranges;
 };
 
+#ifdef MF_RLEFONT_INTERNALS
 /* Internal functions, don't use these directly. */
 MF_EXTERN uint8_t mf_rlefont_render_character(const struct mf_font_s *font,
                                               int16_t x0, int16_t y0,
@@ -69,6 +69,6 @@ MF_EXTERN uint8_t mf_rlefont_render_character(const struct mf_font_s *font,
 
 MF_EXTERN uint8_t mf_rlefont_character_width(const struct mf_font_s *font,
                                              mf_char character);
-
+#endif
 
 #endif

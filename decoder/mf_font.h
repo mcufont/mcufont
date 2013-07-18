@@ -17,7 +17,7 @@
  */
 typedef void (*mf_pixel_callback_t) (int16_t x, int16_t y, uint8_t count,
                                      uint8_t alpha, void *state);
-    
+
 /* General information about a font. */
 struct mf_font_s
 {
@@ -38,6 +38,9 @@ struct mf_font_s
     /* Line height of the font (vertical advance). */
     uint8_t line_height;
     
+    /* Flags identifying various aspects of the font. */
+    uint8_t flags;
+    
     /* Fallback character to use for missing glyphs. */
     mf_char fallback_character;
     
@@ -54,12 +57,19 @@ struct mf_font_s
                                 void *state);
 };
 
+/* The flag definitions for the font.flags field. */
+#define MF_FONT_FLAG_MONOSPACE 0x01
+#define MF_FONT_FLAG_BW        0x02
+
 /* Lookup structure for searching fonts by name. */
 struct mf_font_list_s
 {
     const struct mf_font_list_s *next;
     const struct mf_font_s *font;
 };
+
+/* This will be made into a list of included fonts using macro magic. */
+#define MF_INCLUDED_FONTS 0
 
 /* Function to decode and render a single character. 
  * 
