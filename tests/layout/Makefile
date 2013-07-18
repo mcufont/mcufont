@@ -7,10 +7,10 @@ TESTS = serif16_justified_500.bmp \
 	serif16_center_500.bmp \
 	fixed_7x14_left_600.bmp
 
-all: $(TESTS) run_tests
+all: $(TESTS) $(TESTS:=.difference) run_tests
 
 clean:
-	rm -f $(TESTS)
+	rm -f $(TESTS) $(TESTS:=.difference)
 
 serif16_justified_500.bmp: OPTS = -f DejaVuSerif16 -w 500 -a j
 serif16_left_500.bmp:      OPTS = -f DejaVuSerif16 -w 500 -a l
@@ -20,6 +20,10 @@ fixed_7x14_left_600.bmp:   OPTS = -f fixed_7x14 -w 600 -a l
 
 %.bmp: $(RENDER) $(INPUT)
 	$(RENDER) $(OPTS) -o $@ "`cat $(INPUT)`"
+
+%.bmp.difference: %.bmp %.bmp.expected
+	composite -compose difference $^ $@
+	mogrify -threshold 1 $@
 
 run_tests:
 	@echo "Comparing the results to expected files.."
