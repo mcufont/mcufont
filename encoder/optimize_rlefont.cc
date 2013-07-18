@@ -1,5 +1,5 @@
-#include "optimize.hh"
-#include "encode.hh"
+#include "optimize_rlefont.hh"
+#include "encode_rlefont.hh"
 #include <random>
 #include <iostream>
 #include <set>

@@ -1,10 +1,10 @@
-#include "bdf_import.hh"
-#include "c_export.hh"
 #include "datafile.hh"
-#include "encode.hh"
-#include "freetype_import.hh"
-#include "optimize.hh"
 #include "importtools.hh"
+#include "bdf_import.hh"
+#include "freetype_import.hh"
+#include "export_rlefont.hh"
+#include "encode_rlefont.hh"
+#include "optimize_rlefont.hh"
 #include <vector>
 #include <string>
 #include <set>
@@ -135,33 +135,6 @@ static status_t cmd_import_bdf(const std::vector<std::string> &args)
     return STATUS_OK;
 }
 
-static status_t cmd_export(const std::vector<std::string> &args)
-{
-    if (args.size() != 3)
-        return STATUS_INVALID;
-    
-    std::string src = args.at(1);
-    std::string dst = args.at(2);
-    std::unique_ptr<DataFile> f = load_dat(src);
-    
-    if (!f)
-        return STATUS_ERROR;
-    
-    {
-        std::ofstream header(dst + ".h");
-        write_header(header, dst, *f);
-        std::cout << "Wrote " << dst << ".h" << std::endl;
-    }
-    
-    {
-        std::ofstream source(dst + ".c");
-        write_source(source, dst, *f);
-        std::cout << "Wrote " << dst << ".c" << std::endl;
-    }
-    
-    return STATUS_OK;
-}
-
 static status_t cmd_filter(const std::vector<std::string> &args)
 {
     if (args.size() < 3)
@@ -232,7 +205,78 @@ static status_t cmd_filter(const std::vector<std::string> &args)
     return STATUS_OK;
 }
 
-static status_t cmd_size(const std::vector<std::string> &args)
+static status_t cmd_show_glyph(const std::vector<std::string> &args)
+{
+    if (args.size() != 3)
+        return STATUS_INVALID;
+    
+    std::string src = args.at(1);
+    std::unique_ptr<DataFile> f = load_dat(src);
+    
+    if (!f)
+        return STATUS_ERROR;
+    
+    size_t index = 0;
+    if (args.at(2) == "largest")
+    {
+        std::unique_ptr<encoded_font_t> e = encode_font(*f);
+        size_t maxlen = 0;
+        size_t i = 0;
+        for (encoded_font_t::refstring_t g : e->glyphs)
+        {
+            if (g.size() > maxlen)
+            {
+                maxlen = g.size();
+                index = i;
+            }
+            i++;
+        }
+        
+        std::cout << "Index " << index << ", length " << maxlen << std::endl;
+    }
+    else
+    {
+        index = strtol(args.at(2).c_str(), nullptr, 0);
+    }
+    
+    if (index < 0 || index >= f->GetGlyphCount())
+    {
+        std::cerr << "No such glyph " << index << std::endl;
+        return STATUS_ERROR;
+    }
+    
+    std::cout << f->GlyphToText(index);
+    return STATUS_OK;
+}
+
+static status_t cmd_rlefont_export(const std::vector<std::string> &args)
+{
+    if (args.size() != 3)
+        return STATUS_INVALID;
+    
+    std::string src = args.at(1);
+    std::string dst = args.at(2);
+    std::unique_ptr<DataFile> f = load_dat(src);
+    
+    if (!f)
+        return STATUS_ERROR;
+    
+    {
+        std::ofstream header(dst + ".h");
+        write_header(header, dst, *f);
+        std::cout << "Wrote " << dst << ".h" << std::endl;
+    }
+    
+    {
+        std::ofstream source(dst + ".c");
+        write_source(source, dst, *f);
+        std::cout << "Wrote " << dst << ".c" << std::endl;
+    }
+    
+    return STATUS_OK;
+}
+
+static status_t cmd_rlefont_size(const std::vector<std::string> &args)
 {
     if (args.size() != 2)
         return STATUS_INVALID;
@@ -256,7 +300,7 @@ static status_t cmd_size(const std::vector<std::string> &args)
     return STATUS_OK;
 }
 
-static status_t cmd_optimize(const std::vector<std::string> &args)
+static status_t cmd_rlefont_optimize(const std::vector<std::string> &args)
 {
     if (args.size() != 2 && args.size() != 3)
         return STATUS_INVALID;
@@ -307,7 +351,7 @@ static status_t cmd_optimize(const std::vector<std::string> &args)
     return STATUS_OK;
 }
 
-static status_t cmd_show_encoded(const std::vector<std::string> &args)
+static status_t cmd_rlefont_show_encoded(const std::vector<std::string> &args)
 {
     if (args.size() != 2)
         return STATUS_INVALID;
@@ -349,71 +393,34 @@ static status_t cmd_show_encoded(const std::vector<std::string> &args)
     return STATUS_OK;
 }
 
-static status_t cmd_show_glyph(const std::vector<std::string> &args)
-{
-    if (args.size() != 3)
-        return STATUS_INVALID;
-    
-    std::string src = args.at(1);
-    std::unique_ptr<DataFile> f = load_dat(src);
-    
-    if (!f)
-        return STATUS_ERROR;
-    
-    size_t index = 0;
-    if (args.at(2) == "largest")
-    {
-        std::unique_ptr<encoded_font_t> e = encode_font(*f);
-        size_t maxlen = 0;
-        size_t i = 0;
-        for (encoded_font_t::refstring_t g : e->glyphs)
-        {
-            if (g.size() > maxlen)
-            {
-                maxlen = g.size();
-                index = i;
-            }
-            i++;
-        }
-        
-        std::cout << "Index " << index << ", length " << maxlen << std::endl;
-    }
-    else
-    {
-        index = strtol(args.at(2).c_str(), nullptr, 0);
-    }
-    
-    if (index < 0 || index >= f->GetGlyphCount())
-    {
-        std::cerr << "No such glyph " << index << std::endl;
-        return STATUS_ERROR;
-    }
-    
-    std::cout << f->GlyphToText(index);
-    return STATUS_OK;
-}
 
 static const char *usage_msg =
     "Usage: mcufont <command> [options] ...\n"
-    "   import_ttf <ttffile> <size> [bw]   Import a .ttf font into a data file.\n"
-    "   import_bdf <bdffile>               Import a .bdf font into a data file.\n"
-    "   export <datfile> <basename>        Export to .c and .h source code.\n"
-    "   filter <datfile> <range> ...       Remove everything except specified characters.\n"
-    "   size <datfile>                     Check the encoded size of the data file.\n"
-    "   optimize <datfile>                 Perform an optimization pass on the data file.\n"
-    "   show_encoded <datfile>             Show the encoded data for debugging.\n"
-    "   show_glyph <datfile> <index>       Show the glyph at index.\n";
+    "Commands for importing:\n"
+    "   import_ttf <ttffile> <size> [bw]     Import a .ttf font into a data file.\n"
+    "   import_bdf <bdffile>                 Import a .bdf font into a data file.\n"
+    "\n"
+    "Commands for inspecting and editing data files:\n"
+    "   filter <datfile> <range> ...         Remove everything except specified characters.\n"
+    "   show_glyph <datfile> <index>         Show the glyph at index.\n"
+    "\n"
+    "Commands specific to rlefont format:\n"
+    "   rlefont_size <datfile>               Check the encoded size of the data file.\n"
+    "   rlefont_optimize <datfile>           Perform an optimization pass on the data file.\n"
+    "   rlefont_export <datfile> <basename>  Export to .c and .h source code.\n"
+    "   rlefont_show_encoded <datfile>       Show the encoded data for debugging.\n"
+    "";
 
 typedef status_t (*cmd_t)(const std::vector<std::string> &args);
 static const std::map<std::string, cmd_t> command_list {
-    {"import_ttf",      cmd_import_ttf},
-    {"import_bdf",      cmd_import_bdf},
-    {"export",          cmd_export},
-    {"filter",          cmd_filter},
-    {"size",            cmd_size},
-    {"optimize",        cmd_optimize},
-    {"show_encoded",    cmd_show_encoded},
-    {"show_glyph",      cmd_show_glyph}
+    {"import_ttf",              cmd_import_ttf},
+    {"import_bdf",              cmd_import_bdf},
+    {"filter",                  cmd_filter},
+    {"show_glyph",              cmd_show_glyph},
+    {"rlefont_size",            cmd_rlefont_size},
+    {"rlefont_optimize",        cmd_rlefont_optimize},
+    {"rlefont_export",          cmd_rlefont_export},
+    {"rlefont_show_encoded",    cmd_rlefont_show_encoded},
 };
 
 int main(int argc, char **argv)

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "datafile.hh"
-#include "encode.hh"
+#include "encode_rlefont.hh"
 #include <iostream>
 
 void write_header(std::ostream &out, std::string name, const DataFile &datafile);

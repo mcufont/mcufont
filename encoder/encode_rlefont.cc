@@ -1,4 +1,4 @@
-#include "encode.hh"
+#include "encode_rlefont.hh"
 #include <algorithm>
 #include <stdexcept>
 

@@ -6,8 +6,14 @@ LDFLAGS += -pthread
 CXXFLAGS += $(shell freetype-config --cflags)
 LDFLAGS += $(shell freetype-config --libs)
 
-OBJS = bdf_import.o freetype_import.o importtools.o \
-	datafile.o encode.o optimize.o c_export.o
+# Class to represent font data internally
+OBJS = datafile.o
+
+# Import formats
+OBJS += bdf_import.o freetype_import.o importtools.o
+
+# rlefont export format
+OBJS += encode_rlefont.o optimize_rlefont.o export_rlefont.o
 
 all: run_unittests mcufont
 

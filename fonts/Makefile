@@ -17,29 +17,29 @@ fonts.h: $(FONTS:=.h)
 	echo $(foreach font,$(FONTS),'\n#include "'$(font)'.h"') > $@
 
 %.c %.h: %.dat $(MCUFONT)
-	$(MCUFONT) export $< $(basename $<)
+	$(MCUFONT) rlefont_export $< $(basename $<)
 
 DejaVuSans12.dat: DejaVuSans.ttf
 	$(MCUFONT) import_ttf $< 12
 	$(MCUFONT) filter $@ $(CHARS)
-	$(MCUFONT) optimize $@ 50
+	$(MCUFONT) rlefont_optimize $@ 50
 
 DejaVuSans12bw.dat: DejaVuSans.ttf
 	$(MCUFONT) import_ttf $< 12 bw
 	$(MCUFONT) filter $@ $(CHARS)
-	$(MCUFONT) optimize $@ 50
+	$(MCUFONT) rlefont_optimize $@ 50
 
 DejaVuSerif16.dat: DejaVuSerif.ttf
 	$(MCUFONT) import_ttf $< 16
 	$(MCUFONT) filter $@ $(CHARS)
-	$(MCUFONT) optimize $@ 50
+	$(MCUFONT) rlefont_optimize $@ 50
 
 DejaVuSerif32.dat: DejaVuSerif.ttf
 	$(MCUFONT) import_ttf $< 32
 	$(MCUFONT) filter $@ $(CHARS)
-	$(MCUFONT) optimize $@ 50
+	$(MCUFONT) rlefont_optimize $@ 50
 
 %.dat: %.bdf
 	$(MCUFONT) import_bdf $<
 	$(MCUFONT) filter $@ $(CHARS)
-	$(MCUFONT) optimize $@ 50
+	$(MCUFONT) rlefont_optimize $@ 50
