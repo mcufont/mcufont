@@ -6,6 +6,9 @@
 #include <vector>
 #include <memory>
 
+namespace mcufont {
+namespace rlefont {
+
 struct encoded_font_t
 {
     // RLE-encoded format for storing the dictionary entries.
@@ -48,11 +51,16 @@ std::unique_ptr<DataFile::pixels_t> decode_glyph(
     const encoded_font_t &encoded, size_t index,
     const DataFile::fontinfo_t &fontinfo);
 
+}}
+
 
 #ifdef CXXTEST_RUNNING
 #include <cxxtest/TestSuite.h>
 
-class EncodeTests: public CxxTest::TestSuite
+using namespace mcufont;
+using namespace mcufont::rlefont;
+
+class RLEFontEncodeTests: public CxxTest::TestSuite
 {
 public:
     void testEncode()

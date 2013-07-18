@@ -5,10 +5,12 @@
 #include <cctype>
 #include <stdexcept>
 
+namespace mcufont {
+
 static std::string toupper(const std::string &input)
 {
     std::string result;
-    for (char c: input) result.push_back(toupper(c));
+    for (char c: input) result.push_back(::toupper(c));
     return result;
 }
 
@@ -148,4 +150,6 @@ std::unique_ptr<DataFile> LoadBDF(std::istream &file)
     std::unique_ptr<DataFile> result(new DataFile(
         dictionary, glyphtable, fontinfo));
     return result;
+}
+
 }

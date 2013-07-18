@@ -9,6 +9,9 @@
 
 #define RLEFONT_FORMAT_VERSION 2
 
+namespace mcufont {
+namespace rlefont {
+
 // Convert a file name to a valid C identifier
 static std::string to_identifier(std::string name)
 {
@@ -313,4 +316,5 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     out << "};" << std::endl;
 }
 
+}}
 

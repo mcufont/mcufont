@@ -13,6 +13,8 @@
 #define FT_ERROR_END_LIST };    
 #include FT_ERRORS_H
 
+namespace mcufont {
+
 static void checkFT(FT_Error error)
 {
     if (error != 0)
@@ -159,4 +161,6 @@ std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size, bool bw)
     std::unique_ptr<DataFile> result(new DataFile(
         dictionary, glyphtable, fontinfo));
     return result;
+}
+
 }

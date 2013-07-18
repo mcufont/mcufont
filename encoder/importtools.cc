@@ -1,6 +1,8 @@
 #include "importtools.hh"
 #include <limits>
 
+namespace mcufont {
+
 void eliminate_duplicates(std::vector<DataFile::glyphentry_t> &glyphtable)
 {
     for (size_t i = 0; i + 1 < glyphtable.size(); i++)
@@ -88,4 +90,4 @@ void crop_glyphs(std::vector<DataFile::glyphentry_t> &glyphtable,
     fontinfo.baseline_y -= bbox.top;
 }
 
-
+}

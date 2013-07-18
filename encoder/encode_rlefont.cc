@@ -16,6 +16,9 @@
 #define RLE_ONES        0x80 // 1 to 64 full alphas
 #define RLE_SHADE       0xC0 // 1 to 4 partial alphas
 
+namespace mcufont {
+namespace rlefont {
+
 // Count the number of equal pixels at the beginning of the pixelstring.
 static size_t prefix_length(const DataFile::pixels_t &pixels, size_t pos)
 {
@@ -464,3 +467,5 @@ std::unique_ptr<DataFile::pixels_t> decode_glyph(
 {
     return decode_glyph(encoded, encoded.glyphs.at(index), fontinfo);
 }
+
+}}

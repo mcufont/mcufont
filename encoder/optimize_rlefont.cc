@@ -6,6 +6,9 @@
 #include <thread>
 #include <algorithm>
 
+namespace mcufont {
+namespace rlefont {
+
 typedef std::mt19937 rnd_t;
 
 // Select a random substring among all the glyphs in the datafile.
@@ -409,3 +412,5 @@ void optimize(DataFile &datafile, size_t iterations)
     std::uniform_int_distribution<size_t> dist(0, std::numeric_limits<uint32_t>::max());
     datafile.SetSeed(dist(rnd));
 }
+
+}}

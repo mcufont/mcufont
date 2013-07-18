@@ -15,6 +15,8 @@
 #include <ctime>
 #include <map>
 
+using namespace mcufont;
+
 static std::string strip_extension(std::string filename)
 {
     size_t pos = filename.find_last_of('.');
@@ -98,7 +100,7 @@ static status_t cmd_import_ttf(const std::vector<std::string> &args)
     
     std::unique_ptr<DataFile> f = LoadFreetype(infile, size, bw);
     
-    init_dictionary(*f);
+    mcufont::rlefont::init_dictionary(*f);
     
     if (!save_dat(dest, f.get()))
         return STATUS_ERROR;
@@ -126,7 +128,7 @@ static status_t cmd_import_bdf(const std::vector<std::string> &args)
     
     std::unique_ptr<DataFile> f = LoadBDF(infile);
     
-    init_dictionary(*f);
+    mcufont::rlefont::init_dictionary(*f);
     
     if (!save_dat(dest, f.get()))
         return STATUS_ERROR;
@@ -219,10 +221,11 @@ static status_t cmd_show_glyph(const std::vector<std::string> &args)
     size_t index = 0;
     if (args.at(2) == "largest")
     {
-        std::unique_ptr<encoded_font_t> e = encode_font(*f);
+        std::unique_ptr<mcufont::rlefont::encoded_font_t> e =
+            mcufont::rlefont::encode_font(*f);
         size_t maxlen = 0;
         size_t i = 0;
-        for (encoded_font_t::refstring_t g : e->glyphs)
+        for (mcufont::rlefont::encoded_font_t::refstring_t g : e->glyphs)
         {
             if (g.size() > maxlen)
             {
@@ -263,13 +266,13 @@ static status_t cmd_rlefont_export(const std::vector<std::string> &args)
     
     {
         std::ofstream header(dst + ".h");
-        write_header(header, dst, *f);
+        mcufont::rlefont::write_header(header, dst, *f);
         std::cout << "Wrote " << dst << ".h" << std::endl;
     }
     
     {
         std::ofstream source(dst + ".c");
-        write_source(source, dst, *f);
+        mcufont::rlefont::write_source(source, dst, *f);
         std::cout << "Wrote " << dst << ".c" << std::endl;
     }
     
@@ -287,7 +290,7 @@ static status_t cmd_rlefont_size(const std::vector<std::string> &args)
     if (!f)
         return STATUS_ERROR;
     
-    size_t size = get_encoded_size(*f);
+    size_t size = mcufont::rlefont::get_encoded_size(*f);
     
     std::cout << "Glyph count:       " << f->GetGlyphCount() << std::endl;
     std::cout << "Glyph bbox:        " << f->GetFontInfo().max_width << "x"
@@ -311,7 +314,7 @@ static status_t cmd_rlefont_optimize(const std::vector<std::string> &args)
     if (!f)
         return STATUS_ERROR;
     
-    size_t oldsize = get_encoded_size(*f);
+    size_t oldsize = mcufont::rlefont::get_encoded_size(*f);
     
     std::cout << "Original size is " << oldsize << " bytes" << std::endl;
     std::cout << "Press ctrl-C at any time to stop." << std::endl;
@@ -330,9 +333,9 @@ static status_t cmd_rlefont_optimize(const std::vector<std::string> &args)
     time_t oldtime = time(NULL);
     while (!limit || i < limit)
     {
-        optimize(*f);
+        mcufont::rlefont::optimize(*f);
 
-        size_t newsize = get_encoded_size(*f);
+        size_t newsize = mcufont::rlefont::get_encoded_size(*f);
         time_t newtime = time(NULL);
         
         int bytes_per_min = (oldsize - newsize) * 60 / (newtime - oldtime + 1);
@@ -362,10 +365,11 @@ static status_t cmd_rlefont_show_encoded(const std::vector<std::string> &args)
     if (!f)
         return STATUS_ERROR;
     
-    std::unique_ptr<encoded_font_t> e = encode_font(*f);
+    std::unique_ptr<mcufont::rlefont::encoded_font_t> e =
+        mcufont::rlefont::encode_font(*f);
 
     int i = 0;
-    for (encoded_font_t::rlestring_t d : e->rle_dictionary)
+    for (mcufont::rlefont::encoded_font_t::rlestring_t d : e->rle_dictionary)
     {
         std::cout << "Dict RLE " << 24 + i++ << ": ";
         for (uint8_t v : d)
@@ -373,7 +377,7 @@ static status_t cmd_rlefont_show_encoded(const std::vector<std::string> &args)
         std::cout << std::endl;
     }
     
-    for (encoded_font_t::refstring_t d : e->ref_dictionary)
+    for (mcufont::rlefont::encoded_font_t::refstring_t d : e->ref_dictionary)
     {
         std::cout << "Dict Ref " << 24 + i++ << ": ";
         for (uint8_t v : d)
@@ -382,7 +386,7 @@ static status_t cmd_rlefont_show_encoded(const std::vector<std::string> &args)
     }
     
     i = 0;
-    for (encoded_font_t::refstring_t g : e->glyphs)
+    for (mcufont::rlefont::encoded_font_t::refstring_t g : e->glyphs)
     {
         std::cout << "Glyph " << i++ << ": ";
         for (uint8_t v : g)

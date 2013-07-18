@@ -3,10 +3,17 @@
 #pragma once
 #include "datafile.hh"
 
+namespace mcufont
+{
+
 std::unique_ptr<DataFile> LoadBDF(std::istream &file);
+
+}
 
 #ifdef CXXTEST_RUNNING
 #include <cxxtest/TestSuite.h>
+
+using namespace mcufont;
 
 class BDFTests: public CxxTest::TestSuite
 {

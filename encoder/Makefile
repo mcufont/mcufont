@@ -18,7 +18,7 @@ OBJS += encode_rlefont.o optimize_rlefont.o export_rlefont.o
 all: run_unittests mcufont
 
 clean:
-	rm -f unittests mcufont $(OBJS)
+	rm -f unittests unittests.cc mcufont $(OBJS)
 
 mcufont: main.o $(OBJS)
 	g++ $(CXXFLAGS) -o $@ $^ $(LDFLAGS)

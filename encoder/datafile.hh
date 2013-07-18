@@ -8,6 +8,9 @@
 #include <fstream>
 #include <memory>
 
+namespace mcufont
+{
+
 class DataFile
 {
 public:
@@ -163,3 +166,5 @@ private:
 };
 
 #endif
+
+}

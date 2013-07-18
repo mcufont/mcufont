@@ -6,6 +6,8 @@
 
 #define DATAFILE_FORMAT_VERSION 1
 
+namespace mcufont {
+
 DataFile::DataFile(const std::vector<dictentry_t> &dictionary,
                    const std::vector<glyphentry_t> &glyphs,
                    const fontinfo_t &fontinfo):
@@ -216,4 +218,6 @@ std::istream& operator>>(std::istream& is, DataFile::pixels_t& str)
     }
     
     return is;
+}
+
 }
