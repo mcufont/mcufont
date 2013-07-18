@@ -38,7 +38,11 @@ public:
         int baseline_y; // Y coordinate (from top) of the baseline.
         int line_height; // Line height (vertical advance).
         size_t default_glyph; // Index of the glyph for missing characters.
+        int flags;
     };
+    
+    static const int FLAG_MONOSPACE = 0x01;
+    static const int FLAG_BW = 0x02;
     
     // Construct from data in memory.
     DataFile(const std::vector<dictentry_t> &dictionary,

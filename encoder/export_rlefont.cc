@@ -256,6 +256,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     std::unique_ptr<encoded_font_t> encoded = encode_font(datafile, true);
     
     out << "/* Automatically generated font definition. */" << std::endl;
+    out << "#define MF_RLEFONT_INTERNALS 1" << std::endl;
     out << "#include \"" << name << ".h\"" << std::endl;
     out << std::endl;
     
@@ -296,6 +297,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     out << "    " << datafile.GetFontInfo().baseline_x << ", /* baseline x */" << std::endl;
     out << "    " << datafile.GetFontInfo().baseline_y << ", /* baseline y */" << std::endl;
     out << "    " << datafile.GetFontInfo().line_height << ", /* line height */" << std::endl;
+    out << "    " << datafile.GetFontInfo().flags << ", /* flags */" << std::endl;
     out << "    " << select_fallback_char(datafile) << ", /* fallback character */" << std::endl;
     out << "    " << "&mf_rlefont_character_width," << std::endl;
     out << "    " << "&mf_rlefont_render_character," << std::endl;

@@ -27,6 +27,7 @@ void DataFile::Save(std::ostream &file) const
     file << "BaselineX " << m_fontinfo.baseline_x << std::endl;
     file << "BaselineY " << m_fontinfo.baseline_y << std::endl;
     file << "LineHeight " << m_fontinfo.line_height << std::endl;
+    file << "Flags " << m_fontinfo.flags << std::endl;
     file << "RandomSeed " << m_seed << std::endl;
     
     for (const dictentry_t &d : m_dictionary)
@@ -98,6 +99,10 @@ std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
         else if (tag == "RandomSeed")
         {
             input >> seed;
+        }
+        else if (tag == "Flags")
+        {
+            input >> fontinfo.flags;
         }
         else if (tag == "DictEntry" && dictionary.size() < dictionarysize)
         {
