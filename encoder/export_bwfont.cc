@@ -168,7 +168,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     out << "static const struct mf_bwfont_char_range_s char_ranges[] = {" << std::endl;
     for (size_t i = 0; i < ranges.size(); i++)
     {
-        std::string offsets = (crops[i].width) ? "0" : "glyph_data_" + std::to_string(i);
+        std::string offsets = (crops[i].width) ? "0" : "glyph_offsets_" + std::to_string(i);
         
         out << "    {" << std::endl;
         out << "        " << ranges.at(i).first_char << ", /* first char */" << std::endl;
