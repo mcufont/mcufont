@@ -19,6 +19,9 @@ fonts.h: $(FONTS:=.h)
 %.c %.h: %.dat $(MCUFONT)
 	$(MCUFONT) rlefont_export $< $(basename $<)
 
+fixed_5x8.c fixed_5x8.h: fixed_5x8.dat $(MCUFONT)
+	$(MCUFONT) bwfont_export $< $(basename $<)
+	
 DejaVuSans12.dat: DejaVuSans.ttf
 	$(MCUFONT) import_ttf $< 12
 	$(MCUFONT) filter $@ $(CHARS)

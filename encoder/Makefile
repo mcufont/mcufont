@@ -9,12 +9,18 @@ LDFLAGS += $(shell freetype-config --libs)
 # Class to represent font data internally
 OBJS = datafile.o
 
+# Utility functions
+OBJS += importtools.o exporttools.o
+
 # Import formats
-OBJS += bdf_import.o freetype_import.o importtools.o
+OBJS += bdf_import.o freetype_import.o
 
 # rlefont export format
-OBJS += exporttools.o
 OBJS += encode_rlefont.o optimize_rlefont.o export_rlefont.o
+
+# bwfont export format
+OBJS += export_bwfont.o
+
 
 all: run_unittests mcufont
 

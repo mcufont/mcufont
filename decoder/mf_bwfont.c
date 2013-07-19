@@ -18,7 +18,7 @@ static const struct mf_bwfont_char_range_s *find_char_range(
         }
     }
     
-    return NULL;
+    return 0;
 }
 
 static uint8_t render_char(const struct mf_bwfont_char_range_s *r,
@@ -26,16 +26,16 @@ static uint8_t render_char(const struct mf_bwfont_char_range_s *r,
                            mf_pixel_callback_t callback,
                            void *state)
 {
-    uint8_t *data, *p;
-    uint8_t count, byte, stride, runlen;
+    const uint8_t *data, *p;
+    uint8_t stride, runlen;
     uint8_t x, y, width, height;
     uint8_t bit, byte, mask;
-    bool state, newstate;
+    bool oldstate, newstate;
     
-    data = r->glyph_data[r->glyph_offsets[index]];
+    data = r->glyph_data + r->glyph_offsets[index];
     stride = r->height_bytes;
     width = (r->glyph_offsets[index + 1] - r->glyph_offsets[index]) / stride;
-    height = r->height_pixes;
+    height = r->height_pixels;
     y0 += r->offset_y;
     x0 += r->offset_x;
     bit = 0;
@@ -45,20 +45,20 @@ static uint8_t render_char(const struct mf_bwfont_char_range_s *r,
     {
         mask = (1 << bit);
         
-        state = false;
+        oldstate = false;
         runlen = 0;
         p = data + byte;
         for (x = 0; x < width; x++, p += stride)
         {
             newstate = *p & mask;
-            if (newstate != state)
+            if (newstate != oldstate)
             {
-                if (state && runlen)
+                if (oldstate && runlen)
                 {
                     callback(x0 + x - runlen, y0 + y, runlen, 255, state);
                 }
                 
-                state = newstate;
+                oldstate = newstate;
                 runlen = 0;
             }
             
@@ -105,8 +105,8 @@ uint8_t mf_bwfont_character_width(const struct mf_font_s *font,
     if (!range)
         return 0;
     
-    stride = r->height_bytes;
-    width = (r->glyph_offsets[index + 1] - r->glyph_offsets[index]) / stride;
+    stride = range->height_bytes;
+    width = (range->glyph_offsets[index + 1] - range->glyph_offsets[index]) / stride;
     
-    return width + r->offset_x;
+    return width + range->offset_x;
 }

@@ -5,6 +5,7 @@
 #include "export_rlefont.hh"
 #include "encode_rlefont.hh"
 #include "optimize_rlefont.hh"
+#include "export_bwfont.hh"
 #include <vector>
 #include <string>
 #include <set>
@@ -397,6 +398,38 @@ static status_t cmd_rlefont_show_encoded(const std::vector<std::string> &args)
     return STATUS_OK;
 }
 
+static status_t cmd_bwfont_export(const std::vector<std::string> &args)
+{
+    if (args.size() != 3)
+        return STATUS_INVALID;
+    
+    std::string src = args.at(1);
+    std::string dst = args.at(2);
+    std::unique_ptr<DataFile> f = load_dat(src);
+    
+    if (!f)
+        return STATUS_ERROR;
+    
+    if (!(f->GetFontInfo().flags & DataFile::FLAG_BW))
+    {
+        std::cout << "Warning: font is not black and white" << std::endl;
+    }
+    
+    {
+        std::ofstream header(dst + ".h");
+        mcufont::bwfont::write_header(header, dst, *f);
+        std::cout << "Wrote " << dst << ".h" << std::endl;
+    }
+    
+    {
+        std::ofstream source(dst + ".c");
+        mcufont::bwfont::write_source(source, dst, *f);
+        std::cout << "Wrote " << dst << ".c" << std::endl;
+    }
+    
+    return STATUS_OK;
+}
+
 
 static const char *usage_msg =
     "Usage: mcufont <command> [options] ...\n"
@@ -413,6 +446,9 @@ static const char *usage_msg =
     "   rlefont_optimize <datfile>           Perform an optimization pass on the data file.\n"
     "   rlefont_export <datfile> <basename>  Export to .c and .h source code.\n"
     "   rlefont_show_encoded <datfile>       Show the encoded data for debugging.\n"
+    "\n"
+    "Commands specific to bwfont format:\n"
+    "   bwfont_export datfile basename       Export to .c and .h source code.\n"
     "";
 
 typedef status_t (*cmd_t)(const std::vector<std::string> &args);
@@ -425,6 +461,7 @@ static const std::map<std::string, cmd_t> command_list {
     {"rlefont_optimize",        cmd_rlefont_optimize},
     {"rlefont_export",          cmd_rlefont_export},
     {"rlefont_show_encoded",    cmd_rlefont_show_encoded},
+    {"bwfont_export",           cmd_bwfont_export},
 };
 
 int main(int argc, char **argv)
