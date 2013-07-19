@@ -9,7 +9,7 @@
 #include "exporttools.hh"
 #include "importtools.hh"
 
-#define BWFONT_FORMAT_VERSION 1
+#define BWFONT_FORMAT_VERSION 2
 
 namespace mcufont {
 namespace bwfont {
@@ -69,6 +69,7 @@ struct cropinfo_t
     size_t offset_y;
     size_t height_bytes;
     size_t height_pixels;
+    size_t width;
 };
 
 static void encode_character_range(std::ostream &out, const DataFile &datafile,
@@ -77,6 +78,8 @@ static void encode_character_range(std::ostream &out, const DataFile &datafile,
                                    cropinfo_t &cropinfo)
 {
     std::vector<DataFile::glyphentry_t> glyphs;
+    bool constant_width = true;
+    int width = datafile.GetGlyphEntry(range.glyph_indices[0]).width;
     
     // Copy all the glyphs in this range for the purpose of cropping them.
     for (int glyph_index: range.glyph_indices)
@@ -89,7 +92,14 @@ static void encode_character_range(std::ostream &out, const DataFile &datafile,
         }
         else
         {
-            glyphs.push_back(datafile.GetGlyphEntry(glyph_index));
+            auto glyph = datafile.GetGlyphEntry(glyph_index);
+            glyphs.push_back(glyph);
+            
+            if (glyph.width != width)
+            {
+                constant_width = false;
+                width = 0;
+            }
         }
     }
     
@@ -104,20 +114,24 @@ static void encode_character_range(std::ostream &out, const DataFile &datafile,
     cropinfo.offset_y = old_fi.baseline_y - new_fi.baseline_y;
     cropinfo.height_pixels = new_fi.max_height;
     cropinfo.height_bytes = (cropinfo.height_pixels + 7) / 8;
+    cropinfo.width = width;
     
     // Then format and write out the glyph data
     std::vector<unsigned> offsets;
     std::vector<unsigned> data;
+    size_t stride = cropinfo.height_bytes;
     
     for (const DataFile::glyphentry_t &g : glyphs)
     {
-        offsets.push_back(data.size());
+        offsets.push_back(data.size() / stride);
         encode_glyph(g, new_fi, data);
     }    
-    offsets.push_back(data.size());
+    offsets.push_back(data.size() / stride);
     
     write_const_table(out, data, "uint8_t", "glyph_data_" + std::to_string(range_index));
-    write_const_table(out, offsets, "uint16_t", "glyph_offsets_" + std::to_string(range_index), 4);
+    
+    if (!constant_width)
+        write_const_table(out, offsets, "uint16_t", "glyph_offsets_" + std::to_string(range_index), 4);
 }
     
 void write_source(std::ostream &out, std::string name, const DataFile &datafile)
@@ -154,6 +168,8 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     out << "static const struct mf_bwfont_char_range_s char_ranges[] = {" << std::endl;
     for (size_t i = 0; i < ranges.size(); i++)
     {
+        std::string offsets = (crops[i].width) ? "0" : "glyph_data_" + std::to_string(i);
+        
         out << "    {" << std::endl;
         out << "        " << ranges.at(i).first_char << ", /* first char */" << std::endl;
         out << "        " << ranges.at(i).char_count << ", /* char count */" << std::endl;
@@ -161,7 +177,8 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
         out << "        " << crops[i].offset_y << ", /* offset y */" << std::endl;
         out << "        " << crops[i].height_bytes << ", /* height in bytes */" << std::endl;
         out << "        " << crops[i].height_pixels << ", /* height in pixels */" << std::endl;
-        out << "        " << "glyph_offsets_" << i << "," << std::endl;
+        out << "        " << crops[i].width << ", /* width */" << std::endl;
+        out << "        " << offsets << "," << std::endl;
         out << "        " << "glyph_data_" << i << "," << std::endl;
         out << "    }," << std::endl;
     }

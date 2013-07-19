@@ -21,6 +21,18 @@ static const struct mf_bwfont_char_range_s *find_char_range(
     return 0;
 }
 
+static uint8_t get_width(const struct mf_bwfont_char_range_s *r, uint16_t index)
+{
+    if (r->width)
+    {
+        return r->width;
+    }
+    else
+    {
+        return r->glyph_offsets[index + 1] - r->glyph_offsets[index];
+    }
+}
+
 static uint8_t render_char(const struct mf_bwfont_char_range_s *r,
                            int16_t x0, int16_t y0, uint16_t index,
                            mf_pixel_callback_t callback,
@@ -32,9 +44,17 @@ static uint8_t render_char(const struct mf_bwfont_char_range_s *r,
     uint8_t bit, byte, mask;
     bool oldstate, newstate;
     
-    data = r->glyph_data + r->glyph_offsets[index];
+    if (r->width)
+    {
+        data = r->glyph_data + r->width * index * r->height_bytes;
+    }
+    else
+    {
+        data = r->glyph_data + r->glyph_offsets[index] * r->height_bytes;
+    }
+    
     stride = r->height_bytes;
-    width = (r->glyph_offsets[index + 1] - r->glyph_offsets[index]) / stride;
+    width = get_width(r, index);
     height = r->height_pixels;
     y0 += r->offset_y;
     x0 += r->offset_x;
@@ -63,6 +83,11 @@ static uint8_t render_char(const struct mf_bwfont_char_range_s *r,
             }
             
             runlen++;
+        }
+        
+        if (oldstate && runlen)
+        {
+            callback(x0 + x - runlen, y0 + y, runlen, 255, state);
         }
         
         bit++;
@@ -99,14 +124,10 @@ uint8_t mf_bwfont_character_width(const struct mf_font_s *font,
     const struct mf_bwfont_s *bwfont = (const struct mf_bwfont_s*)font;
     const struct mf_bwfont_char_range_s *range;
     uint16_t index;
-    uint8_t width, stride;
     
     range = find_char_range(bwfont, character, &index);
     if (!range)
         return 0;
     
-    stride = range->height_bytes;
-    width = (range->glyph_offsets[index + 1] - range->glyph_offsets[index]) / stride;
-    
-    return width + range->offset_x;
+    return get_width(range, index) + range->offset_x;
 }

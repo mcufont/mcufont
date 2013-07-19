@@ -5,7 +5,8 @@ TESTS = serif16_justified_500.bmp \
 	serif16_left_500.bmp \
 	serif16_right_500.bmp \
 	serif16_center_500.bmp \
-	fixed_7x14_left_600.bmp
+	fixed_7x14_left_600.bmp \
+	fixed_5x8_left_400.bmp
 
 all: $(TESTS) $(TESTS:=.difference) run_tests
 
@@ -17,6 +18,7 @@ serif16_left_500.bmp:      OPTS = -f DejaVuSerif16 -w 500 -a l
 serif16_right_500.bmp:     OPTS = -f DejaVuSerif16 -w 500 -a r
 serif16_center_500.bmp:    OPTS = -f DejaVuSerif16 -w 500 -a c
 fixed_7x14_left_600.bmp:   OPTS = -f fixed_7x14 -w 600 -a l
+fixed_5x8_left_400.bmp:    OPTS = -f fixed_5x8 -w 400 -a l
 
 %.bmp: $(RENDER) $(INPUT)
 	$(RENDER) $(OPTS) -o $@ "`cat $(INPUT)`"
