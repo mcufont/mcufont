@@ -17,7 +17,6 @@ void write_header(std::ostream &out, std::string name, const DataFile &datafile)
 {
     name = filename_to_identifier(name);
     
-    out << std::endl;
     out << "/* Automatically generated font definition for font '" << name << "'. */" << std::endl;
     out << "#ifndef _" << name << "_H_" << std::endl;
     out << "#define _" << name << "_H_" << std::endl;
@@ -29,14 +28,10 @@ void write_header(std::ostream &out, std::string name, const DataFile &datafile)
     out << std::endl;
     out << "/* List entry for searching fonts by name. */" << std::endl;
     out << "static const struct mf_font_list_s mf_rlefont_" << name << "_listentry = {" << std::endl;
-    out << "#   ifndef MF_INCLUDED_FONTS" << std::endl;
-    out << "    0," << std::endl;
-    out << "#   else" << std::endl;
     out << "    MF_INCLUDED_FONTS," << std::endl;
-    out << "#   undef MF_INCLUDED_FONTS" << std::endl;
-    out << "#   endif" << std::endl;
     out << "    (struct mf_font_s*)&mf_rlefont_" << name << std::endl;
     out << "};" << std::endl;
+    out << "#undef MF_INCLUDED_FONTS" << std::endl;
     out << "#define MF_INCLUDED_FONTS (&mf_rlefont_" << name << "_listentry)" << std::endl;
     
     out << std::endl;
