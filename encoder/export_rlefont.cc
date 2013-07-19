@@ -73,7 +73,7 @@ static void encode_character_range(std::ostream &out, const DataFile &datafile,
     std::vector<unsigned> data;
     std::map<size_t, unsigned> already_encoded;
     
-    for (size_t glyph_index : range.glyph_indices)
+    for (int glyph_index : range.glyph_indices)
     {
         if (already_encoded.count(glyph_index))
         {
@@ -81,45 +81,25 @@ static void encode_character_range(std::ostream &out, const DataFile &datafile,
         }
         else
         {
-            const encoded_font_t::refstring_t &r = encoded.glyphs[glyph_index];
+            encoded_font_t::refstring_t r;
+            int width = 0;
+            
+            if (glyph_index >= 0)
+            {
+                r = encoded.glyphs[glyph_index];
+                width = datafile.GetGlyphEntry(glyph_index).width;
+            }
             
             offsets.push_back(data.size());
             already_encoded[glyph_index] = data.size();
             
-            data.push_back(datafile.GetGlyphEntry(glyph_index).width);
+            data.push_back(width);
             data.insert(data.end(), r.begin(), r.end());
         }
     }
     
     write_const_table(out, data, "uint8_t", "glyph_data_" + std::to_string(range_index));
     write_const_table(out, offsets, "uint16_t", "glyph_offsets_" + std::to_string(range_index), 4);
-}
-
-// Select the character to use as a fallback.
-static int select_fallback_char(const DataFile &datafile)
-{
-    std::set<int> chars;
-    
-    size_t i = 0;
-    for (const DataFile::glyphentry_t &g: datafile.GetGlyphTable())
-    {
-        for (size_t c: g.chars)
-        {
-            chars.insert(c);
-        }
-        i++;
-    }
-    
-    if (chars.count(0xFFFD))
-        return 0xFFFD; // Unicode replacement character
-    
-    if (chars.count(0))
-        return 0; // Used by many BDF fonts as replacement char
-    
-    if (chars.count('?'))
-        return '?';
-    
-    return ' ';
 }
 
 void write_source(std::ostream &out, std::string name, const DataFile &datafile)

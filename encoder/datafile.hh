@@ -30,7 +30,7 @@ public:
     {
         pixels_t data; // The full data of the glyph.
         std::vector<int> chars; // Characters that this glyph represents.
-        int width; // Kerning width of the character.
+        int width; // Tracking width of the character.
     };
     
     struct fontinfo_t
@@ -41,7 +41,6 @@ public:
         int baseline_x; // X coordinate (from left) of the baseline.
         int baseline_y; // Y coordinate (from top) of the baseline.
         int line_height; // Line height (vertical advance).
-        size_t default_glyph; // Index of the glyph for missing characters.
         int flags;
     };
     

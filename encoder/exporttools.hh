@@ -21,6 +21,8 @@ void write_const_table(std::ostream &out, const std::vector<unsigned> &data,
                        const std::string &datatype, const std::string &tablename,
                        size_t width = 2);
 
+// Select the character to use as a fallback.
+int select_fallback_char(const DataFile &datafile);
 
 // Structure to represent one consecutive range of characters.
 struct char_range_t

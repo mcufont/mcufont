@@ -1,5 +1,6 @@
 #include "exporttools.hh"
 #include <iomanip>
+#include <set>
 
 namespace mcufont {
     
@@ -57,6 +58,33 @@ void wordwrap_vector(std::ostream &out, const std::vector<unsigned> &data,
     out << std::endl << "};" << std::endl;
     out << std::endl;
 }    
+
+// Select the character to use as a fallback.
+int select_fallback_char(const DataFile &datafile)
+{
+    std::set<int> chars;
+    
+    size_t i = 0;
+    for (const DataFile::glyphentry_t &g: datafile.GetGlyphTable())
+    {
+        for (size_t c: g.chars)
+        {
+            chars.insert(c);
+        }
+        i++;
+    }
+    
+    if (chars.count(0xFFFD))
+        return 0xFFFD; // Unicode replacement character
+    
+    if (chars.count(0))
+        return 0; // Used by many BDF fonts as replacement char
+    
+    if (chars.count('?'))
+        return '?';
+    
+    return ' ';
+}
 
 // Decide how to best divide the characters in the font into ranges.
 // Limitations are:
