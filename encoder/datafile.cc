@@ -153,6 +153,21 @@ void DataFile::SetDictionaryEntry(size_t index, const dictentry_t &value)
     }
 }
 
+std::map<size_t, size_t> DataFile::GetCharToGlyphMap() const
+{
+    std::map<size_t, size_t> char_to_glyph;
+    
+    for (size_t i = 0; i < m_glyphtable.size(); i++)
+    {
+        for (size_t c: m_glyphtable[i].chars)
+        {
+            char_to_glyph[c] = i;
+        }
+    }
+    
+    return char_to_glyph;
+}
+
 std::string DataFile::GlyphToText(size_t index) const
 {
     std::ostringstream os;

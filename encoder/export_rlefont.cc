@@ -6,142 +6,16 @@
 #include <algorithm>
 #include <string>
 #include <cctype>
+#include "exporttools.hh"
 
 #define RLEFONT_FORMAT_VERSION 2
 
 namespace mcufont {
 namespace rlefont {
 
-// Convert a file name to a valid C identifier
-static std::string to_identifier(std::string name)
-{
-    // If the name contains path separators (/ or \), take only the last part.
-    size_t pos = name.find_last_of("/\\");
-    if (pos != std::string::npos)
-        name = name.substr(pos + 1);
-    
-    // If the name contains a file extension, strip it.
-    pos = name.find_first_of(".");
-    if (pos != std::string::npos)
-        name = name.substr(0, pos);
-    
-    // Replace any special characters with _.
-    for (pos = 0; pos < name.size(); pos++)
-    {
-        if (!isalnum(name.at(pos)))
-            name.at(pos) = '_';
-    }
-    
-    return name;
-}
-
-// Write a vector of integers as line-wrapped hex/integer data for initializing const array.
-static void wordwrap(std::ostream &out, const std::vector<unsigned> &data,
-                     const std::string &prefix, size_t width = 2)
-{
-    int values_per_column = (width <= 2) ? 16 : 8;
-    
-    std::ios::fmtflags flags(out.flags());
-    out << prefix;
-    out << std::hex << std::setfill('0');
-    for (size_t i = 0; i < data.size(); i++)
-    {
-        if (i % values_per_column == 0 && i != 0)
-            out << std::endl << prefix;
-        
-        out << "0x" << std::setw(width) << (int)data.at(i) << ", ";
-    }
-    out.flags(flags);
-}
-
-// Write a vector of integers as a C constant array of given datatype.
-static void write_table(std::ostream &out, const std::vector<unsigned> &data,
-                        const std::string &datatype, const std::string &tablename,
-                        size_t width = 2)
-{
-    out << "static const " << datatype << " " << tablename;
-    out << "[" << data.size() << "] = {" << std::endl;
-    wordwrap(out, data, "    ", width);
-    out << std::endl << "};" << std::endl;
-    out << std::endl;
-}
-
-// Structure to represent one consecutive range of characters.
-struct char_range_t
-{
-    uint16_t first_char;
-    uint16_t char_count;
-    std::vector<size_t> glyph_indices;
-    
-    char_range_t(): first_char(0), char_count(0) {}
-};
-
-// Find out all the characters present in the font and decide how to best
-// to divide them into ranges.
-std::vector<char_range_t> compute_char_ranges(const DataFile &datafile,
-                                              const encoded_font_t &encoded)
-{
-    std::vector<char_range_t> result;
-    std::map<size_t, size_t> char_to_glyph;
-    std::vector<size_t> chars;
-    
-    size_t i = 0;
-    for (const DataFile::glyphentry_t &g: datafile.GetGlyphTable())
-    {
-        for (size_t c: g.chars)
-        {
-            char_to_glyph[c] = i;
-            chars.push_back(c);
-        }
-        i++;
-    }
-    
-    std::sort(chars.begin(), chars.end());
-    
-    i = 0;
-    while (i < chars.size())
-    {
-        char_range_t range;
-        range.first_char = chars.at(i);
-        
-        // Find the point where there is a gap of more than 8 characters.
-        i++;
-        while (i < chars.size() && chars.at(i) - chars.at(i - 1) < 8)
-            i++;
-        
-        uint16_t last_char = chars.at(i - 1);
-        
-        // Then store the indices of glyphs for each character
-        size_t data_length = 0;
-        for (size_t j = range.first_char; j <= last_char; j++)
-        {
-            size_t glyph_index;
-            if (char_to_glyph.count(j) == 0)
-                glyph_index = datafile.GetFontInfo().default_glyph;
-            else
-                glyph_index = char_to_glyph[j];
-            
-            // We can encode at most 64 kB in a single character range.
-            data_length += encoded.glyphs[glyph_index].size() + 1;
-            if (data_length > 65535)
-            {
-                last_char = j - 1;
-                break;
-            }
-            
-            range.glyph_indices.push_back(glyph_index);
-        }
-        
-        range.char_count = last_char - range.first_char + 1;
-        result.push_back(range);
-    }
-    
-    return result;
-}
-
 void write_header(std::ostream &out, std::string name, const DataFile &datafile)
 {
-    name = to_identifier(name);
+    name = filename_to_identifier(name);
     
     out << std::endl;
     out << "/* Automatically generated font definition for font '" << name << "'. */" << std::endl;
@@ -189,8 +63,8 @@ static void encode_dictionary(std::ostream &out, const DataFile &datafile,
     }
     offsets.push_back(data.size());
     
-    write_table(out, data, "uint8_t", "dictionary_data");
-    write_table(out, offsets, "uint16_t", "dictionary_offsets", 4);
+    write_const_table(out, data, "uint8_t", "dictionary_data");
+    write_const_table(out, offsets, "uint16_t", "dictionary_offsets", 4);
 }
 
 // Encode the data tables for a single character range.
@@ -222,8 +96,8 @@ static void encode_character_range(std::ostream &out, const DataFile &datafile,
         }
     }
     
-    write_table(out, data, "uint8_t", "glyph_data_" + std::to_string(range_index));
-    write_table(out, offsets, "uint16_t", "glyph_offsets_" + std::to_string(range_index), 4);
+    write_const_table(out, data, "uint8_t", "glyph_data_" + std::to_string(range_index));
+    write_const_table(out, offsets, "uint16_t", "glyph_offsets_" + std::to_string(range_index), 4);
 }
 
 // Select the character to use as a fallback.
@@ -255,7 +129,7 @@ static int select_fallback_char(const DataFile &datafile)
 
 void write_source(std::ostream &out, std::string name, const DataFile &datafile)
 {
-    name = to_identifier(name);
+    name = filename_to_identifier(name);
     std::unique_ptr<encoded_font_t> encoded = encode_font(datafile, true);
     
     out << "/* Automatically generated font definition. */" << std::endl;
@@ -271,8 +145,15 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     // Write out the dictionary entries
     encode_dictionary(out, datafile, *encoded);
     
+    // Split the characters into ranges
+    auto get_glyph_size = [&encoded](size_t i)
+    {
+        return encoded->glyphs[i].size();
+    };
+    std::vector<char_range_t> ranges = compute_char_ranges(datafile,
+        get_glyph_size, 65536, 16);
+
     // Write out glyph data for character ranges
-    std::vector<char_range_t> ranges = compute_char_ranges(datafile, *encoded);
     for (size_t i = 0; i < ranges.size(); i++)
     {
         encode_character_range(out, datafile, *encoded, ranges.at(i), i);

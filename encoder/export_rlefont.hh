@@ -1,4 +1,4 @@
-// Write out the encoded data in C source code files.
+// Write out the encoded data in C source code files for the mf_rlefont format.
 
 #pragma once
 

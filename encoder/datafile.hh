@@ -7,6 +7,7 @@
 #include <string>
 #include <fstream>
 #include <memory>
+#include <map>
 
 namespace mcufont
 {
@@ -79,6 +80,9 @@ public:
         { return m_glyphtable.at(index); }
     const std::vector<glyphentry_t> &GetGlyphTable() const
         { return m_glyphtable; }
+    
+    // Create a map of char indices to glyph indices
+    std::map<size_t, size_t> GetCharToGlyphMap() const;
     
     // Get the information that applies to all glyphs.
     const fontinfo_t &GetFontInfo() const

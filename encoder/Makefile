@@ -13,6 +13,7 @@ OBJS = datafile.o
 OBJS += bdf_import.o freetype_import.o importtools.o
 
 # rlefont export format
+OBJS += exporttools.o
 OBJS += encode_rlefont.o optimize_rlefont.o export_rlefont.o
 
 all: run_unittests mcufont
