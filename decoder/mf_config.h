@@ -68,10 +68,10 @@
 #endif
 
 /* Spacing of tabulator stops. The value is multiplied by the width of the
- * space character in the current font.
+ * 'm' character in the current font.
  */
 #ifndef MF_TABSIZE
-#define MF_TABSIZE 16
+#define MF_TABSIZE 8
 #endif
 
 

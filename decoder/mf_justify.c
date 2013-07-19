@@ -12,13 +12,12 @@ static bool is_justify_space(uint16_t c)
 static int16_t mf_round_to_tab(const struct mf_font_s *font,
                                int16_t x0, int16_t x)
 {
-    int16_t spacew, tabw, dx;
+    int16_t tabw, dx;
     
-    spacew = mf_character_width(font, ' ');
-    tabw = spacew * MF_TABSIZE;
+    tabw = mf_character_width(font, 'm') * MF_TABSIZE;
     
     /* Always atleast 1 space */
-    x += spacew;
+    x += mf_character_width(font, ' ');
     
     /* Round to next tab stop */
     dx = x - x0 + font->baseline_x;
@@ -31,13 +30,12 @@ static int16_t mf_round_to_tab(const struct mf_font_s *font,
 static int16_t mf_round_to_prev_tab(const struct mf_font_s *font,
                                     int16_t x0, int16_t x)
 {
-    int16_t spacew, tabw, dx;
+    int16_t tabw, dx;
     
-    spacew = mf_character_width(font, ' ');
-    tabw = spacew * MF_TABSIZE;
+    tabw = mf_character_width(font, 'm') * MF_TABSIZE;
     
     /* Always atleast 1 space */
-    x -= spacew;
+    x -= mf_character_width(font, ' ');
     
     /* Round to previous tab stop */
     dx = x0 - x + font->baseline_x;

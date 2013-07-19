@@ -44,7 +44,7 @@ static bool get_wordlen(const struct mf_font_s *font, mf_str *text,
         if (c == ' ')
             result->space += mf_character_width(font, c);
         else if (c == '\t')
-            result->space += mf_character_width(font, ' ') * MF_TABSIZE;
+            result->space += mf_character_width(font, 'm') * MF_TABSIZE;
         else if (c == '\n')
             break;
         
@@ -217,8 +217,6 @@ void mf_wordwrap(const struct mf_font_s *font, int16_t width,
 
 #else
 
-#include <stdio.h>
-
 void mf_wordwrap(const struct mf_font_s *font, int16_t width,
                  mf_str text, mf_line_callback_t callback, void *state)
 {
@@ -278,8 +276,6 @@ void mf_wordwrap(const struct mf_font_s *font, int16_t width,
             cc_prev = cc_cur;
             ls_prev = text;
         }
-        
-        printf("pos %d\n", (int)(text - orig));
         
         if (!callback(linestart, cc_prev, state))
             return;
