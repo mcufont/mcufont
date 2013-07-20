@@ -41,4 +41,4 @@ run_tests:
 update_expected: $(TESTS)
 	@echo "Updating all the expected files.."
 	@$(foreach test,$(TESTS),cp $(test) $(test).expected &&) true
-	cp sans12bw_justified_500.bmp sans12bw_justified_500_bwfont.bmp
+	cp sans12bw_justified_500.bmp.expected sans12bw_justified_500_bwfont.bmp.expected

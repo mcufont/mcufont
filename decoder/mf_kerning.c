@@ -1,4 +1,5 @@
 #include "mf_kerning.h"
+#include <stdbool.h>
 
 #if MF_USE_KERNING
 
@@ -38,6 +39,21 @@ static void fit_rightedge(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
     }
 }
 
+/* Should kerning be done against this character? */
+static bool do_kerning(mf_char c)
+{
+    /* Just a speed optimization, spaces would be ignored anyway. */
+    if (c == ' ' || c == '\n' || c == '\r' || c == '\t')
+        return false;
+    
+    /* Do not kern against digits, in order to keep values in tables nicely
+     * aligned. Most fonts have constant width for digits. */
+    if (c >= '0' && c <= '9')
+        return false;
+    
+    return true;
+}
+
 static int16_t min16(int16_t a, int16_t b) { return (a < b) ? a : b; }
 static int16_t max16(int16_t a, int16_t b) { return (a > b) ? a : b; }
 static int16_t avg16(int16_t a, int16_t b) { return (a + b) / 2; }
@@ -48,6 +64,12 @@ int8_t mf_compute_kerning(const struct mf_font_s *font,
     struct kerning_state_s leftedge, rightedge;
     uint8_t w1, w2, i, min_space;
     int16_t normal_space, adjust, max_adjust;
+    
+    if (font->flags & MF_FONT_FLAG_MONOSPACE)
+        return 0; /* No kerning for monospace fonts */
+    
+    if (!do_kerning(c1) || !do_kerning(c2))
+        return 0;
     
     /* Compute the height of one kerning zone in pixels */
     i = (font->height + MF_KERNING_ZONES - 1) / MF_KERNING_ZONES;
