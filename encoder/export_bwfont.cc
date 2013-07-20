@@ -9,7 +9,7 @@
 #include "exporttools.hh"
 #include "importtools.hh"
 
-#define BWFONT_FORMAT_VERSION 2
+#define BWFONT_FORMAT_VERSION 3
 
 namespace mcufont {
 namespace bwfont {
@@ -42,9 +42,27 @@ void write_header(std::ostream &out, std::string name, const DataFile &datafile)
 
 static void encode_glyph(const DataFile::glyphentry_t &glyph,
                          const DataFile::fontinfo_t &fontinfo,
-                         std::vector<unsigned> &dest)
+                         std::vector<unsigned> &dest,
+                         int num_cols)
 {
-    for (int x = 0; x < glyph.width; x++)
+    const int threshold = 8;
+    
+    // Find the number of columns in the glyph data
+    if (num_cols == 0)
+    {
+        for (int x = 0; x < fontinfo.max_width; x++)
+        {
+            for (int y = 0; y < fontinfo.max_height; y++)
+            {
+                size_t index = y * fontinfo.max_width + x;
+                if (glyph.data.at(index) >= threshold)
+                    num_cols = x + 1;
+            }
+        }
+    }
+    
+    // Write the bits that compose the glyph
+    for (int x = 0; x < num_cols; x++)
     {
         for (int y = 0; y < fontinfo.max_height; y+= 8)
         {
@@ -53,7 +71,7 @@ static void encode_glyph(const DataFile::glyphentry_t &glyph,
             for (size_t i = 0; i < remain; i++)
             {
                 size_t index = (y + i) * fontinfo.max_width + x;
-                if (glyph.data.at(index) >= 8)
+                if (glyph.data.at(index) >= threshold)
                 {
                     byte |= (1 << i);
                 }
@@ -109,6 +127,12 @@ static void encode_character_range(std::ostream &out, const DataFile &datafile,
     DataFile::fontinfo_t new_fi = old_fi;
     crop_glyphs(glyphs, new_fi);
     
+    if (new_fi.max_width != width)
+    {
+        constant_width = false;
+        width = 0;
+    }
+    
     // Fill in the crop information
     cropinfo.offset_x = old_fi.baseline_x - new_fi.baseline_x;
     cropinfo.offset_y = old_fi.baseline_y - new_fi.baseline_y;
@@ -119,19 +143,24 @@ static void encode_character_range(std::ostream &out, const DataFile &datafile,
     // Then format and write out the glyph data
     std::vector<unsigned> offsets;
     std::vector<unsigned> data;
+    std::vector<unsigned> widths;
     size_t stride = cropinfo.height_bytes;
     
     for (const DataFile::glyphentry_t &g : glyphs)
     {
         offsets.push_back(data.size() / stride);
-        encode_glyph(g, new_fi, data);
+        widths.push_back(g.width);
+        encode_glyph(g, new_fi, data, width);
     }    
     offsets.push_back(data.size() / stride);
     
     write_const_table(out, data, "uint8_t", "glyph_data_" + std::to_string(range_index));
     
     if (!constant_width)
+    {
         write_const_table(out, offsets, "uint16_t", "glyph_offsets_" + std::to_string(range_index), 4);
+        write_const_table(out, widths, "uint8_t", "glyph_widths_" + std::to_string(range_index));
+    }
 }
     
 void write_source(std::ostream &out, std::string name, const DataFile &datafile)
@@ -169,6 +198,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     for (size_t i = 0; i < ranges.size(); i++)
     {
         std::string offsets = (crops[i].width) ? "0" : "glyph_offsets_" + std::to_string(i);
+        std::string widths = (crops[i].width) ? "0" : "glyph_widths_" + std::to_string(i);
         
         out << "    {" << std::endl;
         out << "        " << ranges.at(i).first_char << ", /* first char */" << std::endl;
@@ -178,8 +208,9 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
         out << "        " << crops[i].height_bytes << ", /* height in bytes */" << std::endl;
         out << "        " << crops[i].height_pixels << ", /* height in pixels */" << std::endl;
         out << "        " << crops[i].width << ", /* width */" << std::endl;
-        out << "        " << offsets << "," << std::endl;
-        out << "        " << "glyph_data_" << i << "," << std::endl;
+        out << "        " << widths << ", /* glyph widths */" << std::endl;
+        out << "        " << offsets << ", /* glyph offsets */" << std::endl;
+        out << "        " << "glyph_data_" << i << ", /* glyph data */" << std::endl;
         out << "    }," << std::endl;
     }
     out << "};" << std::endl;

@@ -250,6 +250,11 @@ static status_t cmd_show_glyph(const std::vector<std::string> &args)
         return STATUS_ERROR;
     }
     
+    std::cout << "Width: " << f->GetGlyphEntry(index).width << std::endl;
+    std::cout << "Chars: ";
+    for (int c: f->GetGlyphEntry(index).chars) std::cout << c << " ";
+    std::cout << std::endl;
+    
     std::cout << f->GlyphToText(index);
     return STATUS_OK;
 }

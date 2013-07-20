@@ -25,11 +25,11 @@ static uint8_t get_width(const struct mf_bwfont_char_range_s *r, uint16_t index)
 {
     if (r->width)
     {
-        return r->width;
+        return r->width + r->offset_x;
     }
     else
     {
-        return r->glyph_offsets[index + 1] - r->glyph_offsets[index];
+        return r->glyph_widths[index];
     }
 }
 
@@ -40,21 +40,22 @@ static uint8_t render_char(const struct mf_bwfont_char_range_s *r,
 {
     const uint8_t *data, *p;
     uint8_t stride, runlen;
-    uint8_t x, y, width, height;
+    uint8_t x, y, height, num_cols;
     uint8_t bit, byte, mask;
     bool oldstate, newstate;
     
     if (r->width)
     {
         data = r->glyph_data + r->width * index * r->height_bytes;
+        num_cols = r->width;
     }
     else
     {
         data = r->glyph_data + r->glyph_offsets[index] * r->height_bytes;
+        num_cols = r->glyph_offsets[index + 1] - r->glyph_offsets[index];
     }
     
     stride = r->height_bytes;
-    width = get_width(r, index);
     height = r->height_pixels;
     y0 += r->offset_y;
     x0 += r->offset_x;
@@ -68,7 +69,7 @@ static uint8_t render_char(const struct mf_bwfont_char_range_s *r,
         oldstate = false;
         runlen = 0;
         p = data + byte;
-        for (x = 0; x < width; x++, p += stride)
+        for (x = 0; x < num_cols; x++, p += stride)
         {
             newstate = *p & mask;
             if (newstate != oldstate)
@@ -98,7 +99,7 @@ static uint8_t render_char(const struct mf_bwfont_char_range_s *r,
         }
     }
     
-    return width + r->offset_x;
+    return get_width(r, index);
 }
 
 uint8_t mf_bwfont_render_character(const struct mf_font_s *font,
@@ -129,5 +130,5 @@ uint8_t mf_bwfont_character_width(const struct mf_font_s *font,
     if (!range)
         return 0;
     
-    return get_width(range, index) + range->offset_x;
+    return get_width(range, index);
 }

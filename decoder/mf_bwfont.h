@@ -8,7 +8,7 @@
 #include "mf_font.h"
 
 /* Versions of the BW font format that are supported. */
-#define MF_BWFONT_VERSION_2_SUPPORTED 1
+#define MF_BWFONT_VERSION_3_SUPPORTED 1
 
 /* Structure for a range of characters. */
 struct mf_bwfont_char_range_s
@@ -29,13 +29,15 @@ struct mf_bwfont_char_range_s
     uint8_t height_pixels;
     
     /* Positive value if the width of all glyphs in this range is the
-     * same, or zero if it is not. If it is the same, glyph_offsets may
-     * be NULL. */
+     * same, or zero if it is not. */
     uint8_t width;
     
-    /* Lookup table for the character offsets. Multiply by height_bytes
-     * to get the byte offset. Also allows lookup of the character widths.
-     */
+    /* Lookup table for the character widths. NULL if width is specified. */
+    const uint8_t *glyph_widths;
+    
+    /* Lookup table for the character offsets.  Multiply by height_bytes
+     * to get the byte offset. Also allows lookup of the number of columns.
+     * NULL if width is specified. */
     const uint16_t *glyph_offsets;
     
     /* Table for the glyph data.
