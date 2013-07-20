@@ -90,4 +90,45 @@ void crop_glyphs(std::vector<DataFile::glyphentry_t> &glyphtable,
     fontinfo.baseline_y -= bbox.top;
 }
 
+void detect_flags(const std::vector<DataFile::glyphentry_t> &glyphtable,
+                  DataFile::fontinfo_t &fontinfo)
+{
+    if (!glyphtable.size())
+        return;
+    
+    // Check if all glyphs have equal width
+    int width = glyphtable[0].width;
+    bool is_monospace = true;
+    for (const DataFile::glyphentry_t &g : glyphtable)
+    {
+        if (g.width != width)
+        {
+            is_monospace = false;
+            break;
+        }
+    }
+    
+    if (is_monospace)
+        fontinfo.flags |= DataFile::FLAG_MONOSPACE;
+    
+    // Check if all glyphs contain only 0 or 15 alpha
+    bool is_bw = true;
+    for (const DataFile::glyphentry_t &g : glyphtable)
+    {
+        for (uint8_t pixel : g.data)
+        {
+            if (pixel != 0 && pixel != 15)
+            {
+                is_bw = false;
+                break;
+            }
+        }
+        if (!is_bw) break;
+    }
+    
+    if (is_bw)
+        fontinfo.flags |= DataFile::FLAG_BW;
+}
+
+
 }

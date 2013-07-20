@@ -13,4 +13,8 @@ void eliminate_duplicates(std::vector<DataFile::glyphentry_t> &glyphtable);
 void crop_glyphs(std::vector<DataFile::glyphentry_t> &glyphtable,
                  DataFile::fontinfo_t &fontinfo);
 
+// Fill in the flags (BW, monospace) automatically.
+void detect_flags(const std::vector<DataFile::glyphentry_t> &glyphtable,
+                  DataFile::fontinfo_t &fontinfo);
+
 }

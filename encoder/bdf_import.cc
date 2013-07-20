@@ -144,6 +144,7 @@ std::unique_ptr<DataFile> LoadBDF(std::istream &file)
     
     eliminate_duplicates(glyphtable);
     crop_glyphs(glyphtable, fontinfo);
+    detect_flags(glyphtable, fontinfo);
     
     fontinfo.line_height = fontinfo.max_height;
     

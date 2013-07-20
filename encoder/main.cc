@@ -198,6 +198,7 @@ static status_t cmd_filter(const std::vector<std::string> &args)
     
     DataFile::fontinfo_t fontinfo = f->GetFontInfo();
     crop_glyphs(newglyphs, fontinfo);
+    detect_flags(newglyphs, fontinfo);
     
     f.reset(new DataFile(f->GetDictionary(), newglyphs, fontinfo));
     std::cout << "After filtering, " << f->GetGlyphCount() << " glyphs remain." << std::endl;
