@@ -76,7 +76,7 @@ static void write_pixels(struct renderstate_r *rstate, uint16_t count,
 }
 
 /* Skip the given number of pixels (0 alpha) */
-static void skip_pixels(struct renderstate_r *rstate, uint8_t count)
+static void skip_pixels(struct renderstate_r *rstate, uint16_t count)
 {
     rstate->x += count;
     while (rstate->x >= rstate->x_end)
