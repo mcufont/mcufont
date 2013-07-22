@@ -5,25 +5,16 @@ CFLAGS += -ggdb
 FONTDIR = ../../fonts
 
 # Directory containing the decoder source code.
-DECODERDIR = ../../decoder
+MFDIR = ../../decoder
+include $(MFDIR)/mcufont.mk
 
 # List of fonts to include
 FONTS = ../../fonts/*.c
-
-# List of required decoder components
-DECODER = $(DECODERDIR)/mf_encoding.c \
-          $(DECODERDIR)/mf_font.c \
-          $(DECODERDIR)/mf_justify.c \
-          $(DECODERDIR)/mf_kerning.c \
-          $(DECODERDIR)/mf_rlefont.c \
-          $(DECODERDIR)/mf_bwfont.c \
-          $(DECODERDIR)/mf_scaledfont.c \
-          $(DECODERDIR)/mf_wordwrap.c
           
 all: render_bmp
 
-render_bmp: render_bmp.c write_bmp.c $(DECODER) $(FONTS)
-	$(CC) $(CFLAGS) -I $(FONTDIR) -I $(DECODERDIR) -o $@ $^
+render_bmp: render_bmp.c write_bmp.c $(MFSRC) $(FONTS)
+	$(CC) $(CFLAGS) -I $(FONTDIR) -I $(MFINC) -o $@ $^
 
 clean:
 	rm -f render_bmp
