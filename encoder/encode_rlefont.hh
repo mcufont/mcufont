@@ -29,14 +29,14 @@ struct encoded_font_t
 
 // Encode all the glyphs.
 std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile,
-                                            bool verify = false);
+                                            bool fast = true);
 
 // Sum up the total size of the encoded glyphs + dictionary.
 size_t get_encoded_size(const encoded_font_t &encoded);
 
-inline size_t get_encoded_size(const DataFile &datafile)
+inline size_t get_encoded_size(const DataFile &datafile, bool fast = true)
 {
-    std::unique_ptr<encoded_font_t> e = encode_font(datafile);
+    std::unique_ptr<encoded_font_t> e = encode_font(datafile, fast);
     return get_encoded_size(*e);
 }
 
@@ -67,7 +67,7 @@ public:
     {
         std::istringstream s(testfile);
         std::unique_ptr<DataFile> f = DataFile::Load(s);
-        std::unique_ptr<encoded_font_t> e = encode_font(*f);
+        std::unique_ptr<encoded_font_t> e = encode_font(*f, false);
         
         TS_ASSERT_EQUALS(e->glyphs.size(), 3);
         
@@ -96,7 +96,7 @@ public:
     {
         std::istringstream s(testfile);
         std::unique_ptr<DataFile> f = DataFile::Load(s);
-        std::unique_ptr<encoded_font_t> e = encode_font(*f);
+        std::unique_ptr<encoded_font_t> e = encode_font(*f, false);
         
         for (size_t i = 0; i < 3; i++)
         {

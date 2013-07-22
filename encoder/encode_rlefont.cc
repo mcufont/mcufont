@@ -120,9 +120,9 @@ public:
         m_index(-1),
         m_ref(false),
         m_length(0),
-        m_suffix(nullptr),
         m_child0(nullptr),
-        m_child15(nullptr)
+        m_child15(nullptr),
+        m_suffix(nullptr)
         {}
     
     void SetChild(uint8_t p, DictTreeNode *child)
@@ -180,15 +180,15 @@ private:
     // Equals the distance from the tree root.
     size_t m_length;
     
-    // Pointer to the longest suffix of this entry that exists in the
-    // dictionary.
-    DictTreeNode *m_suffix;
-    
     // Most tree nodes will only ever contains children for 0 or 15.
     // Therefore the array for other nodes is allocated only on demand.
     DictTreeNode *m_child0;
     DictTreeNode *m_child15;
     std::unique_ptr<DictTreeNode*[]> m_children;
+    
+    // Pointer to the longest suffix of this entry that exists in the
+    // dictionary.
+    DictTreeNode *m_suffix;
 };
 
 // Preallocated array for tree nodes
@@ -302,7 +302,8 @@ static void fill_tree_suffixes(DictTreeNode *root, DictTreeNode *subtree,
 }
 
 // Construct a lookup tree from the dictionary entries.
-static DictTreeNode* construct_tree(const std::vector<DataFile::dictentry_t> &dictionary, TreeAllocator &storage)
+static DictTreeNode* construct_tree(const std::vector<DataFile::dictentry_t> &dictionary,
+                                    TreeAllocator &storage, bool fast)
 {
     DictTreeNode* root = storage.allocate();
     
@@ -327,23 +328,27 @@ static DictTreeNode* construct_tree(const std::vector<DataFile::dictentry_t> &di
         i++;
     }
     
-    // Populate the fill entries for rest of dictionary
-    for (; i < 256; i++)
+    if (!fast)
     {
-        DataFile::pixels_t pixels;
-        size_t bitcount = fillentry_bitcount(i);
-        uint8_t byte = i - DICT_START7BIT;
-        for (size_t j = 0; j < bitcount; j++)
+        // Populate the fill entries for rest of dictionary
+        for (; i < 256; i++)
         {
-            uint8_t p = (byte & (1 << j)) ? 15 : 0;
-            pixels.push_back(p);
+            DataFile::pixels_t pixels;
+            size_t bitcount = fillentry_bitcount(i);
+            uint8_t byte = i - DICT_START7BIT;
+            for (size_t j = 0; j < bitcount; j++)
+            {
+                uint8_t p = (byte & (1 << j)) ? 15 : 0;
+                pixels.push_back(p);
+            }
+            
+            add_tree_entry(pixels, i, false, root, storage);
         }
         
-        add_tree_entry(pixels, i, false, root, storage);
+        // Fill in the suffix pointers for optimal encoding
+        DataFile::pixels_t nullentry;
+        fill_tree_suffixes(root, root, nullentry);
     }
-    
-    DataFile::pixels_t nullentry;
-    fill_tree_suffixes(root, root, nullentry);
     
     return root;
 }
@@ -364,10 +369,12 @@ struct encoding_link_t
     constexpr encoding_link_t(): previous(0), index(-1), length(9999999) {}
 };
 
-// Perform the reference encoding for a glyph entry.
-static encoded_font_t::refstring_t encode_ref(const DataFile::pixels_t &pixels,
-                                              const DictTreeNode *root,
-                                              bool is_glyph)
+// Perform the reference encoding for a glyph entry (optimal version).
+// Uses a modified Aho-Corasick algorithm combined with breadth first search
+// to find the shortest representation.
+static encoded_font_t::refstring_t encode_ref_slow(const DataFile::pixels_t &pixels,
+                                                   const DictTreeNode *root,
+                                                   bool is_glyph)
 {
     // Chain of encodings. Each entry in this array corresponds to a position
     // in the pixel string.
@@ -413,18 +420,21 @@ static encoded_font_t::refstring_t encode_ref(const DataFile::pixels_t &pixels,
     }
     
     // Check if we can shorten the final encoding using REF_FILLZEROS.
-    for (size_t pos = pixels.size() - 1; pos > 0; pos--)
+    if (is_glyph)
     {
-        if (pixels.at(pos) != 0)
-            break;
-        
-        encoding_link_t link;
-        link.previous = pos;
-        link.index = REF_FILLZEROS;
-        link.length = chain[pos].length + 1;
-        
-        if (link.length <= chain[pixels.size()].length)
-            chain[pixels.size()] = link;
+        for (size_t pos = pixels.size() - 1; pos > 0; pos--)
+        {
+            if (pixels.at(pos) != 0)
+                break;
+            
+            encoding_link_t link;
+            link.previous = pos;
+            link.index = REF_FILLZEROS;
+            link.length = chain[pos].length + 1;
+            
+            if (link.length <= chain[pixels.size()].length)
+                chain[pixels.size()] = link;
+        }
     }
     
     // Backtrack from the final link back to the start and construct the
@@ -441,6 +451,84 @@ static encoded_font_t::refstring_t encode_ref(const DataFile::pixels_t &pixels,
     }
     
     return result;
+}
+
+// Walk the tree as far as possible following the given pixel string iterator.
+// Returns number of pixels encoded, and index is set to the dictionary reference.
+static size_t walk_tree(const DictTreeNode *tree,
+                        DataFile::pixels_t::const_iterator pixels,
+                        DataFile::pixels_t::const_iterator pixelsend,
+                        int &index, bool is_glyph)
+{
+    size_t best_length = 0;
+    size_t length = 0;
+    index = -1;
+    
+    const DictTreeNode* node = tree;
+    while (pixels != pixelsend)
+    {
+        uint8_t pixel = *pixels++;
+        node = node->GetChild(pixel);
+        
+        if (!node)
+            break;
+        
+        length++;
+        
+        if (is_glyph || !node->GetRef())
+        {
+            if (node->GetIndex() >= 0)
+            {
+                index = node->GetIndex();
+                best_length = length;
+            }
+        }
+    }
+    
+    if (index < 0)
+        throw std::logic_error("walk_tree failed to find a valid encoding");
+    
+    return best_length;
+}
+
+// Perform the reference encoding for a glyph entry (fast version).
+// Uses a simple greedy search to find select the encodings.
+static encoded_font_t::refstring_t encode_ref_fast(const DataFile::pixels_t &pixels,
+                                                   const DictTreeNode *tree,
+                                                   bool is_glyph)
+{
+    encoded_font_t::refstring_t result;
+    
+    // Strip any zeroes from end
+    size_t end = pixels.size();
+    
+    if (is_glyph)
+    {
+        while (end > 0 && pixels.at(end - 1) == 0) end--;
+    }
+    
+    size_t i = 0;
+    while (i < end)
+    {
+        int index;
+        i += walk_tree(tree, pixels.begin() + i, pixels.end(), index, is_glyph);
+        result.push_back(index);
+    }
+    
+    if (i < pixels.size())
+        result.push_back(REF_FILLZEROS);
+    
+    return result;
+}
+
+static encoded_font_t::refstring_t encode_ref(const DataFile::pixels_t &pixels,
+                                              const DictTreeNode *tree,
+                                              bool is_glyph, bool fast)
+{
+    if (fast)
+        return encode_ref_fast(pixels, tree, is_glyph);
+    else
+        return encode_ref_slow(pixels, tree, is_glyph);
 }
 
 // Compare dictionary entries by their coding type.
@@ -470,7 +558,7 @@ size_t estimate_tree_node_count(const std::vector<DataFile::dictentry_t> &dict)
 }
 
 std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile,
-                                            bool verify)
+                                            bool fast)
 {
     std::unique_ptr<encoded_font_t> result(new encoded_font_t);
     
@@ -482,7 +570,7 @@ std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile,
     // Build the binary tree for looking up references.
     size_t count = estimate_tree_node_count(sorted_dict);
     TreeAllocator allocator(count);
-    DictTreeNode* tree = construct_tree(sorted_dict, allocator);
+    DictTreeNode* tree = construct_tree(sorted_dict, allocator, fast);
     
     // Encode the dictionary entries, using either RLE or reference method.
     for (const DataFile::dictentry_t &d : sorted_dict)
@@ -493,7 +581,7 @@ std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile,
         }
         else if (d.ref_encode)
         {
-            result->ref_dictionary.push_back(encode_ref(d.replacement, tree, false));
+            result->ref_dictionary.push_back(encode_ref(d.replacement, tree, false, fast));
         }
         else
         {
@@ -504,11 +592,11 @@ std::unique_ptr<encoded_font_t> encode_font(const DataFile &datafile,
     // Then reference-encode the glyphs
     for (const DataFile::glyphentry_t &g : datafile.GetGlyphTable())
     {
-        result->glyphs.push_back(encode_ref(g.data, tree, true));
+        result->glyphs.push_back(encode_ref(g.data, tree, true, fast));
     }
     
     // Optionally verify that the encoding was correct.
-    if (verify)
+    if (!fast)
     {
         for (size_t i = 0; i < datafile.GetGlyphCount(); i++)
         {

@@ -224,7 +224,7 @@ static status_t cmd_show_glyph(const std::vector<std::string> &args)
     if (args.at(2) == "largest")
     {
         std::unique_ptr<mcufont::rlefont::encoded_font_t> e =
-            mcufont::rlefont::encode_font(*f);
+            mcufont::rlefont::encode_font(*f, false);
         size_t maxlen = 0;
         size_t i = 0;
         for (mcufont::rlefont::encoded_font_t::refstring_t g : e->glyphs)
@@ -367,7 +367,7 @@ static status_t cmd_rlefont_show_encoded(const std::vector<std::string> &args)
         return STATUS_ERROR;
     
     std::unique_ptr<mcufont::rlefont::encoded_font_t> e =
-        mcufont::rlefont::encode_font(*f);
+        mcufont::rlefont::encode_font(*f, false);
 
     int i = 0;
     for (mcufont::rlefont::encoded_font_t::rlestring_t d : e->rle_dictionary)

@@ -84,7 +84,7 @@ static void encode_character_range(std::ostream &out,
 void write_source(std::ostream &out, std::string name, const DataFile &datafile)
 {
     name = filename_to_identifier(name);
-    std::unique_ptr<encoded_font_t> encoded = encode_font(datafile, true);
+    std::unique_ptr<encoded_font_t> encoded = encode_font(datafile, false);
     
     out << std::endl;
     out << std::endl;
