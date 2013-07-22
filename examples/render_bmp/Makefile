@@ -17,6 +17,7 @@ DECODER = $(DECODERDIR)/mf_encoding.c \
           $(DECODERDIR)/mf_kerning.c \
           $(DECODERDIR)/mf_rlefont.c \
           $(DECODERDIR)/mf_bwfont.c \
+          $(DECODERDIR)/mf_scaledfont.c \
           $(DECODERDIR)/mf_wordwrap.c
           
 all: render_bmp

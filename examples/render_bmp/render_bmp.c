@@ -21,6 +21,7 @@ typedef struct {
     int width;
     int margin;
     int anchor;
+    int scale;
 } options_t;
 
 static const char default_text[] = 
@@ -30,6 +31,16 @@ static const char default_text[] =
     "The quick brown fox jumps over the lazy dog.\n"
     "0123456789 !?()[]{}/\\+-*";
 
+static const char usage_text[] =
+    "Usage: ./render_bmp [options] string\n"
+    "Options:\n"
+    "    -f font     Specify the font name to use.\n"
+    "    -o out.bmp  Specify the output bmp file name.\n"
+    "    -a l|c|r|j  Align left/center/right/justify.\n"
+    "    -w width    Width of the image to render.\n"
+    "    -m margin   Margin in the image.\n"
+    "    -s scale    Scale the font.\n";
+    
 /* Parse the command line options */
 static bool parse_options(int argc, const char **argv, options_t *options)
 {
@@ -43,6 +54,7 @@ static bool parse_options(int argc, const char **argv, options_t *options)
     options->text = default_text;
     options->width = 200;
     options->margin = 5;
+    options->scale = 1;
     
     while (argv != end)
     {
@@ -66,6 +78,10 @@ static bool parse_options(int argc, const char **argv, options_t *options)
         else if (strcmp(cmd, "-m") == 0 && argc)
         {
             options->margin = atoi(*argv++);
+        }
+        else if (strcmp(cmd, "-s") == 0 && argc)
+        {
+            options->scale = atoi(*argv++);
         }
         else if (strcmp(cmd, "-h") == 0 || strcmp(cmd, "--help") == 0)
         {
@@ -192,20 +208,13 @@ int main(int argc, const char **argv)
 {
     int height;
     const struct mf_font_s *font;
+    struct mf_scaledfont_s scaledfont;
     options_t options;
     state_t state = {};
     
     if (!parse_options(argc - 1, argv + 1, &options))
     {
-        printf(
-            "Usage: ./render_bmp [options] string\n"
-            "Options:\n"
-            "    -f font     Specify the font name to use.\n"
-            "    -o out.bmp  Specify the output bmp file name.\n"
-            "    -a l|c|r|j  Align left/center/right/justify.\n"
-            "    -w width    Width of the image to render.\n"
-            "    -m margin   Margin in the image.\n"
-        );
+        printf(usage_text);
         return 1;
     }
     
@@ -215,6 +224,12 @@ int main(int argc, const char **argv)
     {
         printf("No such font: %s\n", options.fontname);
         return 2;
+    }
+    
+    if (options.scale > 1)
+    {
+        mf_scale_font(&scaledfont, font, options.scale, options.scale);
+        font = &scaledfont.font;
     }
     
     /* Count the number of lines that we need. */

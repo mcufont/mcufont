@@ -8,6 +8,7 @@
 #include "mf_justify.h"
 #include "mf_kerning.h"
 #include "mf_rlefont.h"
+#include "mf_scaledfont.h"
 #include "mf_wordwrap.h"
 
 #endif

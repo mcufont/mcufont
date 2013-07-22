@@ -9,6 +9,7 @@ TESTS = serif16_justified_500.bmp \
 	sans12_justified_500.bmp \
 	sans12bw_justified_500.bmp \
 	sans12bw_justified_500_bwfont.bmp \
+	sans12bw_scaled_500.bmp \
 	fixed_7x14_left_600.bmp \
 	fixed_5x8_left_400.bmp
 
@@ -25,6 +26,7 @@ serif32_justified_500.bmp: OPTS = -f DejaVuSerif32 -w 500 -a j
 sans12_justified_500.bmp:  OPTS = -f DejaVuSans12 -w 400 -a j
 sans12bw_justified_500.bmp:OPTS = -f DejaVuSans12bw -w 400 -a j
 sans12bw_justified_500_bwfont.bmp: OPTS = -f DejaVuSans12bw_bwfont -w 400 -a j
+sans12bw_scaled_500.bmp:   OPTS = -f DejaVuSans12bw -w 400 -a j -s 2
 fixed_7x14_left_600.bmp:   OPTS = -f fixed_7x14 -w 600 -a l
 fixed_5x8_left_400.bmp:    OPTS = -f fixed_5x8 -w 400 -a l
 
