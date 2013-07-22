@@ -8,22 +8,22 @@ FONTS = DejaVuSans12 DejaVuSans12bw DejaVuSerif16 DejaVuSerif32 \
 # Characters to include in the fonts
 CHARS = 0-255 0x2010-0x2015
 
-all: $(FONTS:=.c) $(FONTS:=.h) $(FONTS:=.dat) fonts.h
+all: $(FONTS:=.c) $(FONTS:=.dat) fonts.h
 
 clean:
-	rm -f $(FONTS:=.c) $(FONTS:=.h) $(FONTS:=.dat)
+	rm -f $(FONTS:=.c) $(FONTS:=.dat)
 
-fonts.h: $(FONTS:=.h)
-	echo $(foreach font,$(FONTS),'\n#include "'$(font)'.h"') > $@
+fonts.h: $(FONTS:=.c)
+	echo $(foreach font,$(FONTS),'\n#include "'$(font)'.c"') > $@
 
-%.c %.h: %.dat $(MCUFONT)
-	$(MCUFONT) rlefont_export $< $(basename $<)
+%.c: %.dat $(MCUFONT)
+	$(MCUFONT) rlefont_export $<
 
-fixed_5x8.c fixed_5x8.h: fixed_5x8.dat $(MCUFONT)
-	$(MCUFONT) bwfont_export $< $(basename $<)
+fixed_5x8.c: fixed_5x8.dat $(MCUFONT)
+	$(MCUFONT) bwfont_export $<
 
-DejaVuSans12bw_bwfont.c DejaVuSans12bw_bwfont.h: DejaVuSans12bw_bwfont.dat $(MCUFONT)
-	$(MCUFONT) bwfont_export $< $(basename $<)
+DejaVuSans12bw_bwfont.c: DejaVuSans12bw_bwfont.dat $(MCUFONT)
+	$(MCUFONT) bwfont_export $<
 
 DejaVuSans12bw_bwfont.dat: DejaVuSans12bw.dat
 	cp $< $@

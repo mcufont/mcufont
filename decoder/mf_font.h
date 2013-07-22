@@ -68,8 +68,6 @@ struct mf_font_list_s
     const struct mf_font_s *font;
 };
 
-/* This will be made into a list of included fonts using macro magic. */
-#define MF_INCLUDED_FONTS 0
 
 /* Function to decode and render a single character. 
  * 
@@ -108,7 +106,9 @@ MF_EXTERN uint8_t mf_character_width(const struct mf_font_s *font,
  *
  * Returns a pointer to the font or NULL if not found.
  */
-MF_EXTERN const struct mf_font_s *mf_find_font(const char *name,
-                                const struct mf_font_list_s *fonts);
+MF_EXTERN const struct mf_font_s *mf_find_font(const char *name);
+
+/* Get the list of included fonts */
+MF_EXTERN const struct mf_font_list_s *mf_get_font_list();
 
 #endif

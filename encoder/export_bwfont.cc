@@ -14,32 +14,6 @@
 namespace mcufont {
 namespace bwfont {
 
-void write_header(std::ostream &out, std::string name, const DataFile &datafile)
-{
-    name = filename_to_identifier(name);
-    
-    out << "/* Automatically generated font definition for font '" << name << "'. */" << std::endl;
-    out << "#ifndef _" << name << "_H_" << std::endl;
-    out << "#define _" << name << "_H_" << std::endl;
-    out << std::endl;
-    out << "#include \"mf_bwfont.h\"" << std::endl;
-    out << std::endl;
-    out << "/* The font definition */" << std::endl;
-    out << "extern const struct mf_bwfont_s mf_bwfont_" << name << ";" << std::endl;
-    out << std::endl;
-    out << "/* List entry for searching fonts by name. */" << std::endl;
-    out << "static const struct mf_font_list_s mf_bwfont_" << name << "_listentry = {" << std::endl;
-    out << "    MF_INCLUDED_FONTS," << std::endl;
-    out << "    (struct mf_font_s*)&mf_bwfont_" << name << std::endl;
-    out << "};" << std::endl;
-    out << "#undef MF_INCLUDED_FONTS" << std::endl;
-    out << "#define MF_INCLUDED_FONTS (&mf_bwfont_" << name << "_listentry)" << std::endl;
-    
-    out << std::endl;
-    out << "#endif" << std::endl;
-    
-}
-
 static void encode_glyph(const DataFile::glyphentry_t &glyph,
                          const DataFile::fontinfo_t &fontinfo,
                          std::vector<unsigned> &dest,
@@ -90,7 +64,9 @@ struct cropinfo_t
     size_t width;
 };
 
-static void encode_character_range(std::ostream &out, const DataFile &datafile,
+static void encode_character_range(std::ostream &out,
+                                   const std::string &name,
+                                   const DataFile &datafile,
                                    const char_range_t &range,
                                    unsigned range_index,
                                    cropinfo_t &cropinfo)
@@ -154,12 +130,12 @@ static void encode_character_range(std::ostream &out, const DataFile &datafile,
     }    
     offsets.push_back(data.size() / stride);
     
-    write_const_table(out, data, "uint8_t", "glyph_data_" + std::to_string(range_index));
+    write_const_table(out, data, "uint8_t", "mf_bwfont_" + name + "_glyph_data_" + std::to_string(range_index));
     
     if (!constant_width)
     {
-        write_const_table(out, offsets, "uint16_t", "glyph_offsets_" + std::to_string(range_index), 4);
-        write_const_table(out, widths, "uint8_t", "glyph_widths_" + std::to_string(range_index));
+        write_const_table(out, offsets, "uint16_t", "mf_bwfont_" + name + "_glyph_offsets_" + std::to_string(range_index), 4);
+        write_const_table(out, widths, "uint8_t", "mf_bwfont_" + name + "_glyph_widths_" + std::to_string(range_index));
     }
 }
     
@@ -167,9 +143,15 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
 {
     name = filename_to_identifier(name);
     
-    out << "/* Automatically generated font definition. */" << std::endl;
-    out << "#define MF_BWFONT_INTERNALS 1" << std::endl;
-    out << "#include \"" << name << ".h\"" << std::endl;
+    out << std::endl;
+    out << std::endl;
+    out << "/* Start of automatically generated font definition for " << name << ". */" << std::endl;
+    out << std::endl;
+    
+    out << "#ifndef MF_BWFONT_INTERNALS" << std::endl;
+    out << "#define MF_BWFONT_INTERNALS" << std::endl;
+    out << "#endif" << std::endl;
+    out << "#include \"mf_bwfont.h\"" << std::endl;
     out << std::endl;
     
     out << "#ifndef MF_BWFONT_VERSION_" << BWFONT_FORMAT_VERSION << "_SUPPORTED" << std::endl;
@@ -189,16 +171,16 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     for (size_t i = 0; i < ranges.size(); i++)
     {
         cropinfo_t cropinfo;
-        encode_character_range(out, datafile, ranges.at(i), i, cropinfo);
+        encode_character_range(out, name, datafile, ranges.at(i), i, cropinfo);
         crops.push_back(cropinfo);
     }
     
     // Write out a table describing the character ranges
-    out << "static const struct mf_bwfont_char_range_s char_ranges[] = {" << std::endl;
+    out << "static const struct mf_bwfont_char_range_s mf_bwfont_" + name + "_char_ranges[] = {" << std::endl;
     for (size_t i = 0; i < ranges.size(); i++)
     {
-        std::string offsets = (crops[i].width) ? "0" : "glyph_offsets_" + std::to_string(i);
-        std::string widths = (crops[i].width) ? "0" : "glyph_widths_" + std::to_string(i);
+        std::string offsets = (crops[i].width) ? "0" : "mf_bwfont_" + name + "_glyph_offsets_" + std::to_string(i);
+        std::string widths = (crops[i].width) ? "0" : "mf_bwfont_" + name + "_glyph_widths_" + std::to_string(i);
         
         out << "    {" << std::endl;
         out << "        " << ranges.at(i).first_char << ", /* first char */" << std::endl;
@@ -210,7 +192,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
         out << "        " << crops[i].width << ", /* width */" << std::endl;
         out << "        " << widths << ", /* glyph widths */" << std::endl;
         out << "        " << offsets << ", /* glyph offsets */" << std::endl;
-        out << "        " << "glyph_data_" << i << ", /* glyph data */" << std::endl;
+        out << "        " << "mf_bwfont_" << name << "_glyph_data_" << i << ", /* glyph data */" << std::endl;
         out << "    }," << std::endl;
     }
     out << "};" << std::endl;
@@ -237,8 +219,25 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     
     out << "    " << BWFONT_FORMAT_VERSION << ", /* version */" << std::endl;
     out << "    " << ranges.size() << ", /* char range count */" << std::endl;
-    out << "    " << "char_ranges," << std::endl;
+    out << "    " << "mf_bwfont_" << name << "_char_ranges," << std::endl;
     out << "};" << std::endl;
+    
+    // Write the font lookup structure
+    out << std::endl;
+    out << "#ifdef MF_INCLUDED_FONTS" << std::endl;
+    out << "/* List entry for searching fonts by name. */" << std::endl;
+    out << "static const struct mf_font_list_s mf_bwfont_" << name << "_listentry = {" << std::endl;
+    out << "    MF_INCLUDED_FONTS," << std::endl;
+    out << "    (struct mf_font_s*)&mf_bwfont_" << name << std::endl;
+    out << "};" << std::endl;
+    out << "#undef MF_INCLUDED_FONTS" << std::endl;
+    out << "#define MF_INCLUDED_FONTS (&mf_bwfont_" << name << "_listentry)" << std::endl;
+    out << "#endif" << std::endl;
+    
+    out << std::endl;
+    out << std::endl;
+    out << "/* End of automatically generated font definition for " << name << ". */" << std::endl;
+    out << std::endl;
 }
     
     

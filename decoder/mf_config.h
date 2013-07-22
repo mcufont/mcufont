@@ -3,6 +3,11 @@
 #ifndef _MF_CONFIG_H_
 #define _MF_CONFIG_H_
 
+/* Name of the file that contains all the included fonts. */
+#ifndef MF_FONT_FILE_NAME
+#define MF_FONT_FILE_NAME "fonts.h"
+#endif
+
 /* Encoding for the input data.
  * With the unicode encodings, the library supports the range of unicode
  * characters 0x0000-0xFFFF (the Basic Multilingual Plane).

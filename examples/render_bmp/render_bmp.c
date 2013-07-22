@@ -2,7 +2,6 @@
  * a BMP image. */
 
 #include <mcufont.h>
-#include <fonts.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -49,7 +48,7 @@ static bool parse_options(int argc, const char **argv, options_t *options)
     
     memset(options, 0, sizeof(options_t));
     
-    options->fontname = MF_INCLUDED_FONTS->font->short_name;
+    options->fontname = mf_get_font_list()->font->short_name;
     options->filename = "out.bmp";
     options->text = default_text;
     options->width = 200;
@@ -218,7 +217,7 @@ int main(int argc, const char **argv)
         return 1;
     }
     
-    font = mf_find_font(options.fontname, MF_INCLUDED_FONTS);
+    font = mf_find_font(options.fontname);
     
     if (!font)
     {

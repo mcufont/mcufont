@@ -13,34 +13,11 @@
 namespace mcufont {
 namespace rlefont {
 
-void write_header(std::ostream &out, std::string name, const DataFile &datafile)
-{
-    name = filename_to_identifier(name);
-    
-    out << "/* Automatically generated font definition for font '" << name << "'. */" << std::endl;
-    out << "#ifndef _" << name << "_H_" << std::endl;
-    out << "#define _" << name << "_H_" << std::endl;
-    out << std::endl;
-    out << "#include \"mf_rlefont.h\"" << std::endl;
-    out << std::endl;
-    out << "/* The font definition */" << std::endl;
-    out << "extern const struct mf_rlefont_s mf_rlefont_" << name << ";" << std::endl;
-    out << std::endl;
-    out << "/* List entry for searching fonts by name. */" << std::endl;
-    out << "static const struct mf_font_list_s mf_rlefont_" << name << "_listentry = {" << std::endl;
-    out << "    MF_INCLUDED_FONTS," << std::endl;
-    out << "    (struct mf_font_s*)&mf_rlefont_" << name << std::endl;
-    out << "};" << std::endl;
-    out << "#undef MF_INCLUDED_FONTS" << std::endl;
-    out << "#define MF_INCLUDED_FONTS (&mf_rlefont_" << name << "_listentry)" << std::endl;
-    
-    out << std::endl;
-    out << "#endif" << std::endl;
-}
-
 // Encode the dictionary entries and the offsets to them.
 // Generates tables dictionary_data and dictionary_offsets.
-static void encode_dictionary(std::ostream &out, const DataFile &datafile,
+static void encode_dictionary(std::ostream &out,
+                              const std::string &name,
+                              const DataFile &datafile,
                               const encoded_font_t &encoded)
 {
     std::vector<unsigned> offsets;
@@ -58,13 +35,15 @@ static void encode_dictionary(std::ostream &out, const DataFile &datafile,
     }
     offsets.push_back(data.size());
     
-    write_const_table(out, data, "uint8_t", "dictionary_data");
-    write_const_table(out, offsets, "uint16_t", "dictionary_offsets", 4);
+    write_const_table(out, data, "uint8_t", "mf_rlefont_" + name + "_dictionary_data");
+    write_const_table(out, offsets, "uint16_t", "mf_rlefont_" + name + "_dictionary_offsets", 4);
 }
 
 // Encode the data tables for a single character range.
 // Generates tables glyph_data_i and glyph_offsets_i.
-static void encode_character_range(std::ostream &out, const DataFile &datafile,
+static void encode_character_range(std::ostream &out,
+                              const std::string &name,
+                              const DataFile &datafile,
                               const encoded_font_t& encoded,
                               const char_range_t& range,
                               unsigned range_index)
@@ -98,8 +77,8 @@ static void encode_character_range(std::ostream &out, const DataFile &datafile,
         }
     }
     
-    write_const_table(out, data, "uint8_t", "glyph_data_" + std::to_string(range_index));
-    write_const_table(out, offsets, "uint16_t", "glyph_offsets_" + std::to_string(range_index), 4);
+    write_const_table(out, data, "uint8_t", "mf_rlefont_" + name + "_glyph_data_" + std::to_string(range_index));
+    write_const_table(out, offsets, "uint16_t", "mf_rlefont_" + name + "_glyph_offsets_" + std::to_string(range_index), 4);
 }
 
 void write_source(std::ostream &out, std::string name, const DataFile &datafile)
@@ -107,9 +86,15 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     name = filename_to_identifier(name);
     std::unique_ptr<encoded_font_t> encoded = encode_font(datafile, true);
     
-    out << "/* Automatically generated font definition. */" << std::endl;
-    out << "#define MF_RLEFONT_INTERNALS 1" << std::endl;
-    out << "#include \"" << name << ".h\"" << std::endl;
+    out << std::endl;
+    out << std::endl;
+    out << "/* Start of automatically generated font definition for " << name << ". */" << std::endl;
+    out << std::endl;
+    
+    out << "#ifndef MF_RLEFONT_INTERNALS" << std::endl;
+    out << "#define MF_RLEFONT_INTERNALS" << std::endl;
+    out << "#endif" << std::endl;
+    out << "#include \"mf_rlefont.h\"" << std::endl;
     out << std::endl;
     
     out << "#ifndef MF_RLEFONT_VERSION_" << RLEFONT_FORMAT_VERSION << "_SUPPORTED" << std::endl;
@@ -118,7 +103,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     out << std::endl;
     
     // Write out the dictionary entries
-    encode_dictionary(out, datafile, *encoded);
+    encode_dictionary(out, name, datafile, *encoded);
     
     // Split the characters into ranges
     auto get_glyph_size = [&encoded](size_t i)
@@ -131,17 +116,17 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     // Write out glyph data for character ranges
     for (size_t i = 0; i < ranges.size(); i++)
     {
-        encode_character_range(out, datafile, *encoded, ranges.at(i), i);
+        encode_character_range(out, name, datafile, *encoded, ranges.at(i), i);
     }
     
     // Write out a table describing the character ranges
-    out << "static const struct mf_rlefont_char_range_s char_ranges[] = {" << std::endl;
+    out << "static const struct mf_rlefont_char_range_s mf_rlefont_" << name << "_char_ranges[] = {" << std::endl;
     for (size_t i = 0; i < ranges.size(); i++)
     {
         out << "    {" << ranges.at(i).first_char
             << ", " << ranges.at(i).char_count
-            << ", glyph_offsets_" << i
-            << ", glyph_data_" << i << "}," << std::endl; 
+            << ", mf_rlefont_" << name << "_glyph_offsets_" << i
+            << ", mf_rlefont_" << name << "_glyph_data_" << i << "}," << std::endl; 
     }
     out << "};" << std::endl;
     out << std::endl;
@@ -163,13 +148,30 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     out << "    }," << std::endl;
     
     out << "    " << RLEFONT_FORMAT_VERSION << ", /* version */" << std::endl;
-    out << "    " << "dictionary_data," << std::endl;
-    out << "    " << "dictionary_offsets," << std::endl;
+    out << "    " << "mf_rlefont_" << name << "_dictionary_data," << std::endl;
+    out << "    " << "mf_rlefont_" << name << "_dictionary_offsets," << std::endl;
     out << "    " << encoded->rle_dictionary.size() << ", /* rle dict count */" << std::endl;
     out << "    " << encoded->ref_dictionary.size() + encoded->rle_dictionary.size() << ", /* total dict count */" << std::endl;
     out << "    " << ranges.size() << ", /* char range count */" << std::endl;
-    out << "    " << "char_ranges," << std::endl;
+    out << "    " << "mf_rlefont_" << name << "_char_ranges," << std::endl;
     out << "};" << std::endl;
+    
+    // Write the font lookup structure
+    out << std::endl;
+    out << "#ifdef MF_INCLUDED_FONTS" << std::endl;
+    out << "/* List entry for searching fonts by name. */" << std::endl;
+    out << "static const struct mf_font_list_s mf_rlefont_" << name << "_listentry = {" << std::endl;
+    out << "    MF_INCLUDED_FONTS," << std::endl;
+    out << "    (struct mf_font_s*)&mf_rlefont_" << name << std::endl;
+    out << "};" << std::endl;
+    out << "#undef MF_INCLUDED_FONTS" << std::endl;
+    out << "#define MF_INCLUDED_FONTS (&mf_rlefont_" << name << "_listentry)" << std::endl;
+    out << "#endif" << std::endl;
+    
+    out << std::endl;
+    out << std::endl;
+    out << "/* End of automatically generated font definition for " << name << ". */" << std::endl;
+    out << std::endl;
 }
 
 }}

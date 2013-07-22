@@ -1,6 +1,13 @@
 #include "mf_font.h"
 #include <stdbool.h>
 
+/* This will be made into a list of included fonts using macro magic. */
+#define MF_INCLUDED_FONTS 0
+
+/* Included fonts begin here */
+#include MF_FONT_FILE_NAME
+/* Include fonts end here */
+
 uint8_t mf_render_character(const struct mf_font_s *font,
                             int16_t x0, int16_t y0,
                             mf_char character,
@@ -44,11 +51,10 @@ static bool strequals(const char *a, const char *b)
     return (!*b);
 }
 
-const struct mf_font_s *mf_find_font(const char *name,
-                                     const struct mf_font_list_s *fonts)
+const struct mf_font_s *mf_find_font(const char *name)
 {
     const struct mf_font_list_s *f;
-    f = fonts;
+    f = MF_INCLUDED_FONTS;
     
     while (f)
     {
@@ -62,5 +68,10 @@ const struct mf_font_s *mf_find_font(const char *name,
     }
     
     return 0;
+}
+
+const struct mf_font_list_s *mf_get_font_list()
+{
+    return MF_INCLUDED_FONTS;
 }
 

@@ -261,26 +261,20 @@ static status_t cmd_show_glyph(const std::vector<std::string> &args)
 
 static status_t cmd_rlefont_export(const std::vector<std::string> &args)
 {
-    if (args.size() != 3)
+    if (args.size() != 2 && args.size() != 3)
         return STATUS_INVALID;
     
     std::string src = args.at(1);
-    std::string dst = args.at(2);
+    std::string dst = (args.size() == 2) ? strip_extension(src) + ".c" : args.at(2);
     std::unique_ptr<DataFile> f = load_dat(src);
     
     if (!f)
         return STATUS_ERROR;
     
     {
-        std::ofstream header(dst + ".h");
-        mcufont::rlefont::write_header(header, dst, *f);
-        std::cout << "Wrote " << dst << ".h" << std::endl;
-    }
-    
-    {
-        std::ofstream source(dst + ".c");
+        std::ofstream source(dst);
         mcufont::rlefont::write_source(source, dst, *f);
-        std::cout << "Wrote " << dst << ".c" << std::endl;
+        std::cout << "Wrote " << dst << std::endl;
     }
     
     return STATUS_OK;
@@ -406,11 +400,11 @@ static status_t cmd_rlefont_show_encoded(const std::vector<std::string> &args)
 
 static status_t cmd_bwfont_export(const std::vector<std::string> &args)
 {
-    if (args.size() != 3)
+    if (args.size() != 2 && args.size() != 3)
         return STATUS_INVALID;
     
     std::string src = args.at(1);
-    std::string dst = args.at(2);
+    std::string dst = (args.size() == 2) ? strip_extension(src) + ".c" : args.at(2);
     std::unique_ptr<DataFile> f = load_dat(src);
     
     if (!f)
@@ -422,15 +416,9 @@ static status_t cmd_bwfont_export(const std::vector<std::string> &args)
     }
     
     {
-        std::ofstream header(dst + ".h");
-        mcufont::bwfont::write_header(header, dst, *f);
-        std::cout << "Wrote " << dst << ".h" << std::endl;
-    }
-    
-    {
-        std::ofstream source(dst + ".c");
+        std::ofstream source(dst);
         mcufont::bwfont::write_source(source, dst, *f);
-        std::cout << "Wrote " << dst << ".c" << std::endl;
+        std::cout << "Wrote " << dst << std::endl;
     }
     
     return STATUS_OK;
@@ -450,11 +438,11 @@ static const char *usage_msg =
     "Commands specific to rlefont format:\n"
     "   rlefont_size <datfile>               Check the encoded size of the data file.\n"
     "   rlefont_optimize <datfile>           Perform an optimization pass on the data file.\n"
-    "   rlefont_export <datfile> <basename>  Export to .c and .h source code.\n"
+    "   rlefont_export <datfile> [outfile]   Export to .c source code.\n"
     "   rlefont_show_encoded <datfile>       Show the encoded data for debugging.\n"
     "\n"
     "Commands specific to bwfont format:\n"
-    "   bwfont_export datfile basename       Export to .c and .h source code.\n"
+    "   bwfont_export <datfile> [outfile     Export to .c source code.\n"
     "";
 
 typedef status_t (*cmd_t)(const std::vector<std::string> &args);
