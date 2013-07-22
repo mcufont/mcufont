@@ -9,6 +9,7 @@
 
 /* Versions of the RLE font format that are supported. */
 #define MF_RLEFONT_VERSION_2_SUPPORTED 1
+#define MF_RLEFONT_VERSION_3_SUPPORTED 1
 
 /* Structure for a range of characters. This implements a sparse storage of
  * character indices, so that you can e.g. pick a 100 characters in the middle

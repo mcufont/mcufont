@@ -14,6 +14,14 @@
 #define RLE_ONES        0x80
 #define RLE_SHADE       0xC0
 
+/* Dictionary "fill entries" for encoding bits directly. */
+#define DICT_START7BIT  4
+#define DICT_START6BIT  132
+#define DICT_START5BIT  196
+#define DICT_START4BIT  228
+#define DICT_START3BIT  244
+#define DICT_START2BIT  252
+
 /* Find a pointer to the glyph matching a given character by searching
  * through the character ranges. If the character is not found, return
  * pointer to the default glyph.
@@ -120,6 +128,56 @@ static void write_rle_dictentry(const struct mf_rlefont_s *font,
     }
 }
 
+/* Get bit count for the "fill entries" */
+static uint8_t fillentry_bitcount(uint8_t index)
+{
+    if (index >= DICT_START2BIT)
+        return 2;
+    else if (index >= DICT_START3BIT)
+        return 3;
+    else if (index >= DICT_START4BIT)
+        return 4;
+    else if (index >= DICT_START5BIT)
+        return 5;
+    else if (index >= DICT_START6BIT)
+        return 6;
+    else
+        return 7;
+}
+
+/* Decode and write out a direct binary codeword */
+static void write_bin_codeword(const struct mf_rlefont_s *font,
+                                struct renderstate_r *rstate,
+                                uint8_t code)
+{
+    uint8_t bitcount = fillentry_bitcount(code);
+    uint8_t byte = code - DICT_START7BIT;
+    uint8_t runlen = 0;
+    
+    while (bitcount--)
+    {
+        if (byte & 1)
+        {
+            runlen++;
+        }
+        else 
+        {
+            if (runlen)
+            {
+                write_pixels(rstate, runlen, 255);
+                runlen = 0;
+            }
+            
+            skip_pixels(rstate, 1);
+        }
+        
+        byte >>= 1;
+    }
+    
+    if (runlen)
+        write_pixels(rstate, runlen, 255);
+}
+
 /* Decode and write out a reference codeword */
 static void write_ref_codeword(const struct mf_rlefont_s *font,
                                 struct renderstate_r *rstate,
@@ -138,9 +196,13 @@ static void write_ref_codeword(const struct mf_rlefont_s *font,
     {
         /* Reserved */
     }
-    else
+    else if (code < DICT_START + font->rle_entry_count)
     {
         write_rle_dictentry(font, rstate, code - DICT_START);
+    }
+    else
+    {
+        write_bin_codeword(font, rstate, code);
     }
 }
 
@@ -165,7 +227,8 @@ static void write_glyph_codeword(const struct mf_rlefont_s *font,
                                 struct renderstate_r *rstate,
                                 uint8_t code)
 {
-    if (code >= DICT_START + font->rle_entry_count)
+    if (code >= DICT_START + font->rle_entry_count &&
+        code < DICT_START + font->dict_entry_count)
     {
         write_ref_dictentry(font, rstate, code - DICT_START);
     }
