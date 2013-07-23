@@ -3,10 +3,20 @@
 #ifndef _MF_CONFIG_H_
 #define _MF_CONFIG_H_
 
+
+/*******************************************************
+ * Configuration settings related to build environment *
+ *******************************************************/
+
 /* Name of the file that contains all the included fonts. */
 #ifndef MF_FONT_FILE_NAME
 #define MF_FONT_FILE_NAME "fonts.h"
 #endif
+
+
+/*****************************************
+ * Configuration settings related to API *
+ *****************************************/
 
 /* Encoding for the input data.
  * With the unicode encodings, the library supports the range of unicode
@@ -25,29 +35,10 @@
 #define MF_ENCODING MF_ENCODING_UTF8
 #endif
 
-/* Enable or disable the kerning module.
- * Disabling it saves some code size and run time, but causes the spacing
- * between characters to be less consistent.
- */
-#ifndef MF_USE_KERNING
-#define MF_USE_KERNING 1
-#endif
 
-/* Enable or disable the advanced word wrap algorithm.
- * If disabled, uses a simpler algorithm.
- */
-#ifndef MF_USE_ADVANCED_WORDWRAP
-#define MF_USE_ADVANCED_WORDWRAP 1
-#endif
-
-/* Number of vertical zones to use when computing kerning.
- * Larger values give more accurate kerning, but are slower and use somewhat
- * more memory. There is no point to increase this beyond the height of the
- * font.
- */
-#ifndef MF_KERNING_ZONES
-#define MF_KERNING_ZONES 16
-#endif
+/************************************************************************
+ * Configuration settings related to visual appearance of rendered text *
+ ************************************************************************/
 
 /* Minimum space between characters, in percents of the glyph width.
  * Increasing this causes the kerning module to leave more space between
@@ -78,6 +69,57 @@
 #ifndef MF_TABSIZE
 #define MF_TABSIZE 8
 #endif
+
+
+/*************************************************************************
+ * Configuration settings to strip down library to reduce resource usage *
+ *************************************************************************/
+
+/* Enable or disable the kerning module.
+ * Disabling it saves some code size and run time, but causes the spacing
+ * between characters to be less consistent.
+ */
+#ifndef MF_USE_KERNING
+#define MF_USE_KERNING 1
+#endif
+
+/* Enable or disable the advanced word wrap algorithm.
+ * If disabled, uses a simpler algorithm.
+ */
+#ifndef MF_USE_ADVANCED_WORDWRAP
+#define MF_USE_ADVANCED_WORDWRAP 1
+#endif
+
+/* Enable of disable the justification algorithm.
+ * If disabled, mf_render_justified renders just left-aligned.
+ */
+#ifndef MF_USE_JUSTIFY
+#define MF_USE_JUSTIFY 1
+#endif
+
+/* Enable or disable the center and right alignment code.
+ * If disabled, any alignment results in MF_ALIGN_LEFT.
+ */
+#ifndef MF_USE_ALIGN
+#define MF_USE_ALIGN 1
+#endif
+
+/* Enable or disable the support for tab alignment.
+ * If disabled, tabs will be rendered as regular space character.
+ */
+#ifndef MF_USE_TABS
+#define MF_USE_TABS 1
+#endif
+
+/* Number of vertical zones to use when computing kerning.
+ * Larger values give more accurate kerning, but are slower and use somewhat
+ * more memory. There is no point to increase this beyond the height of the
+ * font.
+ */
+#ifndef MF_KERNING_ZONES
+#define MF_KERNING_ZONES 16
+#endif
+
 
 
 /* Add extern "C" when used from C++. */

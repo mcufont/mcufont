@@ -1,13 +1,7 @@
 #include "mf_justify.h"
 #include "mf_kerning.h"
 
-/* Returns true if the character is a justification point, i.e. expands
- * when the text is being justified. */
-static bool is_justify_space(uint16_t c)
-{
-    return c == ' ' || c == 0xA0;
-}
-
+#if MF_USE_TABS
 /* Round the X coordinate up to the nearest tab stop. */
 static int16_t mf_round_to_tab(const struct mf_font_s *font,
                                int16_t x0, int16_t x)
@@ -43,6 +37,7 @@ static int16_t mf_round_to_prev_tab(const struct mf_font_s *font,
     
     return x;
 }
+#endif
 
 int16_t mf_get_string_width(const struct mf_font_s *font, mf_str text,
                             uint16_t count, bool kern)
@@ -80,8 +75,8 @@ static uint16_t strip_spaces(mf_str text, uint16_t count, mf_char *last_char)
     {
         i++;
         tmp = mf_getchar(&text);
-        if (!is_justify_space(tmp) &&
-            tmp != '\n' && tmp != '\r' && tmp != '\t')
+        if (tmp != ' ' && tmp != 0xA0 && tmp != '\n' &&
+            tmp != '\r' && tmp != '\t')
         {
             result = i;
         }
@@ -114,9 +109,13 @@ static void render_left(const struct mf_font_s *font,
         
         if (c2 == '\t')
         {
+#if MF_USE_TABS
             x = mf_round_to_tab(font, x0, x);
             c1 = ' ';
             continue;
+#else
+            c2 = ' ';
+#endif
         }
         
         if (c1 != 0)
@@ -126,6 +125,21 @@ static void render_left(const struct mf_font_s *font,
         c1 = c2;
     }
 }
+
+#if !MF_USE_ALIGN
+
+void mf_render_aligned(const struct mf_font_s *font,
+                       int16_t x0, int16_t y0,
+                       enum mf_align_t align,
+                       mf_str text, uint16_t count,
+                       mf_pixel_callback_t callback, void *state)
+{
+    int16_t string_width;
+    count = strip_spaces(text, count, 0);
+    render_left(font, x0, y0, text, count, callback, state);
+}
+
+#else
 
 /* Render right-aligned string, right edge at x0. */
 static void render_right(const struct mf_font_s *font,
@@ -152,9 +166,13 @@ static void render_right(const struct mf_font_s *font,
         /* Perform tab alignment */
         if (c1 == '\t')
         {
+#if MF_USE_TABS
             x = mf_round_to_prev_tab(font, x0, x);
             c2 = ' ';
             continue;
+#else
+            c1 = ' ';
+#endif
         }
         
         /* Apply the nominal character width */
@@ -192,6 +210,28 @@ void mf_render_aligned(const struct mf_font_s *font,
     {
         render_right(font, x0, y0, text, count, callback, state);
     }
+}
+
+#endif
+
+
+#if !MF_USE_JUSTIFY
+
+void mf_render_justified(const struct mf_font_s *font,
+                         int16_t x0, int16_t y0, int16_t width,
+                         mf_str text, uint16_t count,
+                         mf_pixel_callback_t callback, void *state)
+{
+    mf_render_aligned(font, x0, y0, MF_ALIGN_LEFT, text, count, callback, state);
+}
+
+#else
+
+/* Returns true if the character is a justification point, i.e. expands
+ * when the text is being justified. */
+static bool is_justify_space(uint16_t c)
+{
+    return c == ' ' || c == 0xA0;
 }
 
 /* Count the number of space characters in string */
@@ -239,11 +279,15 @@ void mf_render_justified(const struct mf_font_s *font,
             
             if (c2 == '\t')
             {
+#if MF_USE_TABS
                 tmp = x;
                 x = mf_round_to_tab(font, x0, x);
                 adjustment -= x - tmp - mf_character_width(font, '\t');
                 c1 = c2;
                 continue;
+#else
+                c2 = ' ';
+#endif
             }
             
             if (is_justify_space(c2))
@@ -266,4 +310,6 @@ void mf_render_justified(const struct mf_font_s *font,
         }
     }
 }
+
+#endif
 
