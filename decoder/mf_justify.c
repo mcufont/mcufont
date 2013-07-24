@@ -97,7 +97,8 @@ static uint16_t strip_spaces(mf_str text, uint16_t count, mf_char *last_char)
 static void render_left(const struct mf_font_s *font,
                         int16_t x0, int16_t y0,
                         mf_str text, uint16_t count,
-                        mf_pixel_callback_t callback, void *state)
+                        mf_character_callback_t callback,
+                        void *state)
 {
     int16_t x;
     mf_char c1 = 0, c2;
@@ -121,7 +122,7 @@ static void render_left(const struct mf_font_s *font,
         if (c1 != 0)
             x += mf_compute_kerning(font, c1, c2);
 
-        x += mf_render_character(font, x, y0, c2, callback, state);
+        x += callback(x, y0, c2, state);
         c1 = c2;
     }
 }
@@ -132,7 +133,8 @@ void mf_render_aligned(const struct mf_font_s *font,
                        int16_t x0, int16_t y0,
                        enum mf_align_t align,
                        mf_str text, uint16_t count,
-                       mf_pixel_callback_t callback, void *state)
+                       mf_character_callback_t callback,
+                       void *state)
 {
     int16_t string_width;
     count = strip_spaces(text, count, 0);
@@ -145,7 +147,8 @@ void mf_render_aligned(const struct mf_font_s *font,
 static void render_right(const struct mf_font_s *font,
                          int16_t x0, int16_t y0,
                          mf_str text, uint16_t count,
-                         mf_pixel_callback_t callback, void *state)
+                         mf_character_callback_t callback,
+                         void *state)
 {
     int16_t x;
     uint16_t i;
@@ -182,7 +185,7 @@ static void render_right(const struct mf_font_s *font,
         if (c2 != 0)
             x -= mf_compute_kerning(font, c1, c2);
         
-        mf_render_character(font, x, y0, c1, callback, state);
+        callback(x, y0, c1, state);
         c2 = c1;
     }
 }
@@ -191,7 +194,8 @@ void mf_render_aligned(const struct mf_font_s *font,
                        int16_t x0, int16_t y0,
                        enum mf_align_t align,
                        mf_str text, uint16_t count,
-                       mf_pixel_callback_t callback, void *state)
+                       mf_character_callback_t callback,
+                       void *state)
 {
     int16_t string_width;
     count = strip_spaces(text, count, 0);
@@ -220,7 +224,8 @@ void mf_render_aligned(const struct mf_font_s *font,
 void mf_render_justified(const struct mf_font_s *font,
                          int16_t x0, int16_t y0, int16_t width,
                          mf_str text, uint16_t count,
-                         mf_pixel_callback_t callback, void *state)
+                         mf_character_callback_t callback,
+                         void *state)
 {
     mf_render_aligned(font, x0, y0, MF_ALIGN_LEFT, text, count, callback, state);
 }
@@ -249,7 +254,8 @@ static uint16_t count_spaces(mf_str text, uint16_t count)
 void mf_render_justified(const struct mf_font_s *font,
                          int16_t x0, int16_t y0, int16_t width,
                          mf_str text, uint16_t count,
-                         mf_pixel_callback_t callback, void *state)
+                         mf_character_callback_t callback,
+                         void *state)
 {
     int16_t string_width, adjustment;
     uint16_t num_spaces;
@@ -305,7 +311,7 @@ void mf_render_justified(const struct mf_font_s *font,
                 adjustment -= tmp;
             }
 
-            x += mf_render_character(font, x, y0, c2, callback, state);
+            x += callback(x, y0, c2, state);
             c1 = c2;
         }
     }
