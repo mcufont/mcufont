@@ -9,7 +9,7 @@
 #include "exporttools.hh"
 #include "importtools.hh"
 
-#define BWFONT_FORMAT_VERSION 3
+#define BWFONT_FORMAT_VERSION 4
 
 namespace mcufont {
 namespace bwfont {

@@ -8,7 +8,7 @@
 #include <cctype>
 #include "exporttools.hh"
 
-#define RLEFONT_FORMAT_VERSION 3
+#define RLEFONT_FORMAT_VERSION 4
 
 namespace mcufont {
 namespace rlefont {

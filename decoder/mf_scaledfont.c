@@ -71,6 +71,8 @@ void mf_scale_font(struct mf_scaledfont_s *newfont,
     newfont->font.height *= y_scale;
     newfont->font.baseline_x *= x_scale;
     newfont->font.baseline_y *= y_scale;
+    newfont->font.min_x_advance *= x_scale;
+    newfont->font.max_x_advance *= x_scale;
     newfont->font.line_height *= y_scale;
     newfont->font.character_width = &scaled_character_width;
     newfont->font.render_character = &scaled_render_character;
