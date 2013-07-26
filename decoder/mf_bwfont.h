@@ -8,7 +8,7 @@
 #include "mf_font.h"
 
 /* Versions of the BW font format that are supported. */
-#define MF_BWFONT_VERSION_3_SUPPORTED 1
+#define MF_BWFONT_VERSION_4_SUPPORTED 1
 
 /* Structure for a range of characters. */
 struct mf_bwfont_char_range_s

@@ -21,6 +21,12 @@ void write_const_table(std::ostream &out, const std::vector<unsigned> &data,
                        const std::string &datatype, const std::string &tablename,
                        size_t width = 2);
 
+// Get minimum tracking width of font
+int get_min_x_advance(const DataFile &datafile);
+
+// Get maximum tracking width of font
+int get_max_x_advance(const DataFile &datafile);
+
 // Select the character to use as a fallback.
 int select_fallback_char(const DataFile &datafile);
 

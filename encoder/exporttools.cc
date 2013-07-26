@@ -59,6 +59,32 @@ void wordwrap_vector(std::ostream &out, const std::vector<unsigned> &data,
     out << std::endl;
 }    
 
+int get_min_x_advance(const DataFile &datafile)
+{
+    int min = datafile.GetGlyphEntry(0).width;
+    
+    for (const DataFile::glyphentry_t &g : datafile.GetGlyphTable())
+    {
+        if (min > g.width)
+            min = g.width;
+    }
+    
+    return min;
+}
+
+int get_max_x_advance(const DataFile &datafile)
+{
+    int max = 0;
+    
+    for (const DataFile::glyphentry_t &g : datafile.GetGlyphTable())
+    {
+        if (max < g.width)
+            max = g.width;
+    }
+    
+    return max;
+}
+
 // Select the character to use as a fallback.
 int select_fallback_char(const DataFile &datafile)
 {

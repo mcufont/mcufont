@@ -208,6 +208,8 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     out << "    " << "\"" << name << "\"," << std::endl;
     out << "    " << datafile.GetFontInfo().max_width << ", /* width */" << std::endl;
     out << "    " << datafile.GetFontInfo().max_height << ", /* height */" << std::endl;
+    out << "    " << get_min_x_advance(datafile) << ", /* min x advance */" << std::endl;
+    out << "    " << get_max_x_advance(datafile) << ", /* max x advance */" << std::endl;
     out << "    " << datafile.GetFontInfo().baseline_x << ", /* baseline x */" << std::endl;
     out << "    " << datafile.GetFontInfo().baseline_y << ", /* baseline y */" << std::endl;
     out << "    " << datafile.GetFontInfo().line_height << ", /* line height */" << std::endl;
