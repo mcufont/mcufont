@@ -52,6 +52,17 @@ int16_t mf_get_string_width(const struct mf_font_s *font, mf_str text,
     {
         c2 = mf_getchar(&text);
 
+        if (c2 == '\t')
+        {
+#if MF_USE_TABS
+            result = mf_round_to_tab(font, 0, result);
+            c1 = ' ';
+            continue;
+#else
+            c2 = ' ';
+#endif
+        }
+        
         if (kern && c1 != 0)
             result += mf_compute_kerning(font, c1, c2);
 
