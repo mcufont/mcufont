@@ -1,4 +1,4 @@
-CFLAGS = -O0 -Wall -Werror -Wno-unused-function -ansi
+CFLAGS = -O0 -Wall -Werror -ansi
 CFLAGS += -ggdb
 
 # Directory containing the font files.

@@ -121,7 +121,7 @@ static bool append_char(const struct mf_font_s *font, int16_t width,
     }
 }
 
-static int16_t abs16(int16_t x) { return (x > 0) ? x : -x; }
+/*static int16_t abs16(int16_t x) { return (x > 0) ? x : -x; }*/
 static int32_t sq16(int16_t x) { return (int32_t)x * x; }
 
 /* Try to balance the lines by potentially moving one word from the previous

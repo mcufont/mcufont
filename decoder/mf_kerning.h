@@ -21,9 +21,7 @@
 MF_EXTERN int8_t mf_compute_kerning(const struct mf_font_s *font,
                                     mf_char c1, mf_char c2);
 #else
-static int8_t mf_compute_kerning(const struct mf_font_s *font,
-                                 mf_char c1, mf_char c2)
-{ return 0; }
+#define mf_compute_kerning(f,c1,c2) (0)
 #endif
 
 #endif

@@ -54,7 +54,7 @@ static bool do_kerning(mf_char c)
     return true;
 }
 
-static int16_t min16(int16_t a, int16_t b) { return (a < b) ? a : b; }
+/*static int16_t min16(int16_t a, int16_t b) { return (a < b) ? a : b; }*/
 static int16_t max16(int16_t a, int16_t b) { return (a > b) ? a : b; }
 static int16_t avg16(int16_t a, int16_t b) { return (a + b) / 2; }
 

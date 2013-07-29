@@ -35,25 +35,11 @@ typedef const wchar_t * mf_str;
  * 
  * Returns: The next character, as unicode codepoint.
  */
-#if MF_ENCODING == MF_ENCODING_UTF8
 MF_EXTERN mf_char mf_getchar(mf_str *str);
-#else
-static mf_char mf_getchar(mf_str *str)
-{
-    if (!(**str))
-        return 0;
-    else
-        return *(*str)++;
-}
-#endif
 
 /* Moves back the pointer to the beginning of the previous character.
  * Be careful not to go beyond the start of the string.
  */
-#if MF_ENCODING == MF_ENCODING_UTF8
 MF_EXTERN void mf_rewind(mf_str *str);
-#else
-static void mf_rewind(mf_str *str) { (*str)--; }
-#endif
 
 #endif
