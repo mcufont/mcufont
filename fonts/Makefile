@@ -14,7 +14,7 @@ clean:
 	rm -f $(FONTS:=.c) $(FONTS:=.dat)
 
 fonts.h: $(FONTS:=.c)
-	echo $(foreach font,$(FONTS),'\n#include "'$(font)'.c"') > $@
+	/bin/echo -e $(foreach font,$(FONTS),'\n#include "'$(font)'.c"') > $@
 
 %.c: %.dat $(MCUFONT)
 	$(MCUFONT) rlefont_export $<
