@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 #include <stdexcept>
+#include <iostream>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -110,7 +111,15 @@ std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size, bool bw)
     charcode = FT_Get_First_Char(face, &gindex);
     while (gindex)
     {
-        checkFT(FT_Load_Glyph(face, gindex, loadmode));
+        try
+        {
+            checkFT(FT_Load_Glyph(face, gindex, loadmode));
+        }
+        catch (std::runtime_error &e)
+        {
+            std::cerr << "Skipping glyph " << gindex << ": " << e.what() << std::endl;        
+            charcode = FT_Get_Next_Char(face, charcode, &gindex);
+        }
         
         DataFile::glyphentry_t glyph;
         glyph.width = (face->glyph->advance.x + 32) / 64;
