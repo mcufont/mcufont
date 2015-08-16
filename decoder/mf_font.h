@@ -94,12 +94,31 @@ MF_EXTERN uint8_t mf_render_character(const struct mf_font_s *font,
  * data, but rather the tracking width.
  *
  * font:      Pointer to the font definition.
- * character: The character code (unicode) to render.
+ * character: The character code (unicode) to check width of.
  * 
  * Returns width of the character in pixels.
  */
 MF_EXTERN uint8_t mf_character_width(const struct mf_font_s *font,
                                      mf_char character);
+
+/* Count the amount of white space at the borders of a character.
+ *
+ * E.g. if the font->width and font->height are 10x20, but the character
+ * is only a thin line at the very left edge, this function will return
+ * (0, 0, 9, 0). If the character is fully whitespace, the function will
+ * return (10, 20, 0, 0).
+ *
+ * font:      Pointer to the font definition.
+ * character: The character code (unicode) to check white space of.
+ * left:      Number of empty rows at left edge. Can be NULL.
+ * top:       Number of empty rows at top edge. Can be NULL.
+ * right:     Number of empty rows at right edge. Can be NULL.
+ * bottom:    Number of empty rows at bottom edge. Can be NULL.
+ */
+MF_EXTERN void mf_character_whitespace(const struct mf_font_s *font,
+                                       mf_char character,
+                                       uint8_t *left, uint8_t *top,
+                                       uint8_t *right, uint8_t *bottom);
 
 /* Find a font based on name. The name can be either short name or full name.
  * Note: You can pass MF_INCLUDED_FONTS to search among all the included .h
