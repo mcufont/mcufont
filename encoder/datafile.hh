@@ -110,9 +110,12 @@ private:
 std::ostream& operator<<(std::ostream& os, const DataFile::pixels_t& str);
 std::istream& operator>>(std::istream& is, DataFile::pixels_t& str);
 
+}
 
 #ifdef CXXTEST_RUNNING
 #include <cxxtest/TestSuite.h>
+
+using namespace mcufont;
 
 class DataFileTests: public CxxTest::TestSuite
 {
@@ -169,5 +172,3 @@ private:
 };
 
 #endif
-
-}
