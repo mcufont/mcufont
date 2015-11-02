@@ -164,8 +164,8 @@ static void tune_lines(struct linelen_s *current, struct linelen_s *previous,
 void mf_wordwrap(const struct mf_font_s *font, int16_t width,
                  mf_str text, mf_line_callback_t callback, void *state)
 {
-    struct linelen_s current;
-    struct linelen_s previous;
+    struct linelen_s current = { 0 };
+    struct linelen_s previous = { 0 };
     bool full;
     
     current.start = text;
