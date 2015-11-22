@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <stdexcept>
+#include "ccfixes.hh"
 
 #define DATAFILE_FORMAT_VERSION 1
 

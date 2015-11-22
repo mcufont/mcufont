@@ -5,6 +5,7 @@
 #include <set>
 #include <thread>
 #include <algorithm>
+#include "ccfixes.hh"
 
 namespace mcufont {
 namespace rlefont {
