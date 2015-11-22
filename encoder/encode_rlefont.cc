@@ -1,6 +1,7 @@
 #include "encode_rlefont.hh"
 #include <algorithm>
 #include <stdexcept>
+#include "ccfixes.hh"
 
 // Number of reserved codes before the dictionary entries.
 #define DICT_START 24

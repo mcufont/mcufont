@@ -8,6 +8,7 @@
 #include <cctype>
 #include "exporttools.hh"
 #include "importtools.hh"
+#include "ccfixes.hh"
 
 #define BWFONT_FORMAT_VERSION 4
 

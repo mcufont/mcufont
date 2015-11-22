@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <map>
+#include "ccfixes.hh"
 
 using namespace mcufont;
 

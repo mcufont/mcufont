@@ -7,6 +7,7 @@
 #include <string>
 #include <cctype>
 #include "exporttools.hh"
+#include "ccfixes.hh"
 
 #define RLEFONT_FORMAT_VERSION 4
 
