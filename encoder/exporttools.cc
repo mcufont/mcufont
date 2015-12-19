@@ -162,6 +162,11 @@ std::vector<char_range_t> compute_char_ranges(const DataFile &datafile,
             if (data_length > maximum_size)
             {
                 last_char = j - 1;
+                
+                // Return the rest of characters to be processed by next range.
+                while (chars.at(i-1) > last_char)
+                    i--;
+                
                 break;
             }
             
