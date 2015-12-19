@@ -22,6 +22,9 @@ static void encode_glyph(const DataFile::glyphentry_t &glyph,
 {
     const int threshold = 8;
     
+    if (glyph.data.size() == 0)
+        return;
+    
     // Find the number of columns in the glyph data
     if (num_cols == 0)
     {
