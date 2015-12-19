@@ -109,7 +109,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     // Split the characters into ranges
     auto get_glyph_size = [&encoded](size_t i)
     {
-        return encoded->glyphs[i].size();
+        return encoded->glyphs[i].size() + 1; // +1 byte for glyph width
     };
     std::vector<char_range_t> ranges = compute_char_ranges(datafile,
         get_glyph_size, 65536, 16);
