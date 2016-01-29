@@ -443,7 +443,7 @@ static const char *usage_msg =
     "   rlefont_show_encoded <datfile>       Show the encoded data for debugging.\n"
     "\n"
     "Commands specific to bwfont format:\n"
-    "   bwfont_export <datfile> [outfile     Export to .c source code.\n"
+    "   bwfont_export <datfile> [outfile]    Export to .c source code.\n"
     "";
 
 typedef status_t (*cmd_t)(const std::vector<std::string> &args);
