@@ -1,0 +1,70 @@
+################################################################################
+#                                                                              #
+# Requirements:                                                                #
+#	print/freetype2                                                            #
+#	devel/gmake                                                                #
+#                                                                              #
+# Notes:                                                                       #
+#	Run this makefile using 'gmake', not 'make'.                               #
+#   Texted on FreeBSD 10.2 (64-Bit)                                            #
+#                                                                              #
+################################################################################
+
+TARGET      = mcufont
+
+CPPC        = clang++
+LD          = clang++
+RM          = rm
+SIZE        = size
+
+CPPFLAGS	= -O2 -Wall -Werror -Wno-unused-function -Wno-sign-compare -std=c++11
+CPPFLAGS	+= -ggdb
+LDFLAGS		+= -pthread
+
+CPPSRCS		= \
+				bdf_import.cc \
+				datafile.cc \
+				encode_rlefont.cc \
+				export_bwfont.cc \
+				export_rlefont.cc \
+				exporttools.cc \
+				freetype_import.cc \
+				importtools.cc \
+				optimize_rlefont.cc \
+				main.cc
+
+INCDIR		= .
+
+################################################################################
+# Apply some magic where necessary                                             #
+################################################################################
+CPPFLAGS	+= $(shell freetype-config --cflags)
+LDFLAGS		+= $(shell freetype-config --libs)
+OBJS		+= $(addsuffix .o,$(basename $(CPPSRCS:%.cpp=%.o)))
+
+################################################################################
+# Rules                                                                        #
+################################################################################
+
+all: $(TARGET) size
+
+clean:
+	@$(RM) -f mcufont $(OBJS)
+	@echo Done
+
+$(TARGET): $(OBJS)
+	@echo Linking $@
+	@$(LD) $(CPPFLAGS) -o $@ $^ $(LDFLAGS)
+
+%.o: %.cc
+	@echo Compiling $^
+	@$(CPPC) $(CPPFLAGS) -c -o $@ $^ 
+
+size: $(TARGET)
+	@echo
+	@echo
+	$(SIZE) $^
+	@echo
+
+.PHONY: clean
+
