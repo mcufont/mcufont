@@ -1,12 +1,12 @@
 ################################################################################
 #                                                                              #
 # Requirements:                                                                #
-#	print/freetype2                                                            #
-#	devel/gmake                                                                #
+#   print/freetype2                                                            #
+#   devel/gmake                                                                #
 #                                                                              #
 # Notes:                                                                       #
-#	Run this makefile using 'gmake', not 'make'.                               #
-#   Texted on FreeBSD 10.2 (64-Bit)                                            #
+#    Run this makefile using 'gmake', not 'make'.                              #
+#    Tested on FreeBSD 10.2 (64-Bit)                                           #
 #                                                                              #
 ################################################################################
 
@@ -17,11 +17,11 @@ LD          = clang++
 RM          = rm
 SIZE        = size
 
-CPPFLAGS	= -O2 -Wall -Werror -Wno-unused-function -Wno-sign-compare -std=c++11
-CPPFLAGS	+= -ggdb
-LDFLAGS		+= -pthread
+CPPFLAGS    = -O2 -Wall -Werror -Wno-unused-function -Wno-sign-compare -std=c++11
+CPPFLAGS   += -ggdb
+LDFLAGS    += -pthread
 
-CPPSRCS		= \
+CPPSRCS     = \
 				bdf_import.cc \
 				datafile.cc \
 				encode_rlefont.cc \
@@ -33,14 +33,17 @@ CPPSRCS		= \
 				optimize_rlefont.cc \
 				main.cc
 
-INCDIR		= .
+INCDIR      = .
+
 
 ################################################################################
 # Apply some magic where necessary                                             #
 ################################################################################
-CPPFLAGS	+= $(shell freetype-config --cflags)
-LDFLAGS		+= $(shell freetype-config --libs)
-OBJS		+= $(addsuffix .o,$(basename $(CPPSRCS:%.cpp=%.o)))
+
+CPPFLAGS    += $(shell freetype-config --cflags)
+LDFLAGS     += $(shell freetype-config --libs)
+OBJS        += $(addsuffix .o,$(basename $(CPPSRCS:%.cpp=%.o)))
+
 
 ################################################################################
 # Rules                                                                        #
