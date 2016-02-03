@@ -245,7 +245,7 @@ static status_t cmd_show_glyph(const std::vector<std::string> &args)
         index = strtol(args.at(2).c_str(), nullptr, 0);
     }
     
-    if (index < 0 || index >= f->GetGlyphCount())
+    if (index >= f->GetGlyphCount())
     {
         std::cerr << "No such glyph " << index << std::endl;
         return STATUS_ERROR;
