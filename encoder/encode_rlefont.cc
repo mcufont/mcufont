@@ -117,7 +117,7 @@ static encoded_font_t::rlestring_t encode_rle(const DataFile::pixels_t &pixels)
 class DictTreeNode
 {
 public:
-    constexpr DictTreeNode():
+    DictTreeNode():
         m_index(-1),
         m_ref(false),
         m_length(0),
