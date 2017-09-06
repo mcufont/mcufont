@@ -245,7 +245,7 @@ static status_t cmd_show_glyph(const std::vector<std::string> &args)
         index = strtol(args.at(2).c_str(), nullptr, 0);
     }
     
-    if (index < 0 || index >= f->GetGlyphCount())
+    if (index >= f->GetGlyphCount())
     {
         std::cerr << "No such glyph " << index << std::endl;
         return STATUS_ERROR;
@@ -443,7 +443,7 @@ static const char *usage_msg =
     "   rlefont_show_encoded <datfile>       Show the encoded data for debugging.\n"
     "\n"
     "Commands specific to bwfont format:\n"
-    "   bwfont_export <datfile> [outfile     Export to .c source code.\n"
+    "   bwfont_export <datfile> [outfile]    Export to .c source code.\n"
     "";
 
 typedef status_t (*cmd_t)(const std::vector<std::string> &args);

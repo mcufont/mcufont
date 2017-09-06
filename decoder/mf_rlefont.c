@@ -183,7 +183,11 @@ static void write_ref_codeword(const struct mf_rlefont_s *font,
                                 struct renderstate_r *rstate,
                                 uint8_t code)
 {
-    if (code <= 15)
+    if (code == 0)
+    {
+        skip_pixels(rstate, 1);
+    }
+    else if (code <= 15)
     {
         write_pixels(rstate, 1, 0x11 * code);
     }
