@@ -1,6 +1,9 @@
 CXXFLAGS = -O2 -Wall -Werror -Wno-unused-function -Wno-sign-compare -std=c++0x
 CXXFLAGS += -ggdb
-LDFLAGS += -pthread
+
+ifneq ($(shell uname -s),Darwin)
+	LDFLAGS += -pthread
+endif
 
 # Libfreetype
 CXXFLAGS += $(shell freetype-config --cflags)
