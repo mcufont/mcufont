@@ -22,7 +22,7 @@ static bool get_wordlen(const struct mf_font_s *font, mf_str *text,
                         struct wordlen_s *result)
 {
     mf_char c;
-    mf_str prev;
+    mf_str prev = *text;
     
     result->word = 0;
     result->space = 0;
@@ -33,10 +33,11 @@ static bool get_wordlen(const struct mf_font_s *font, mf_str *text,
     {
         result->chars++;
         result->word += mf_character_width(font, c);
+
+        prev = *text;
         c = mf_getchar(text);
     }
     
-    prev = *text;
     while (c && is_wrap_space(c))
     {
         result->chars++;
@@ -45,8 +46,11 @@ static bool get_wordlen(const struct mf_font_s *font, mf_str *text,
             result->space += mf_character_width(font, c);
         else if (c == '\t')
             result->space += mf_character_width(font, 'm') * MF_TABSIZE;
-        else if (c == '\n')
+        else if (c == '\n') {
+            /* Special case for newlines, skip the character then break. */
+            prev = *text;
             break;
+        }
         
         prev = *text;
         c = mf_getchar(text);
