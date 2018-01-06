@@ -36,7 +36,7 @@ struct mf_font_s
     uint8_t max_x_advance;
     
     /* Location of the text baseline relative to character. */
-    uint8_t baseline_x;
+    int8_t baseline_x;
     uint8_t baseline_y;
     
     /* Line height of the font (vertical advance). */
