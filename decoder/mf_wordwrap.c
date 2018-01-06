@@ -42,7 +42,7 @@ static bool get_wordlen(const struct mf_font_s *font, mf_str *text,
     {
         result->chars++;
         
-        if (c == ' ')
+        if (c == ' ' || c == '-')
             result->space += mf_character_width(font, c);
         else if (c == '\t')
             result->space += mf_character_width(font, 'm') * MF_TABSIZE;
