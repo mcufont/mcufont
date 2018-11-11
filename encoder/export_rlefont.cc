@@ -36,8 +36,8 @@ static void encode_dictionary(std::ostream &out,
     }
     offsets.push_back(data.size());
     
-    write_const_table(out, data, "uint8_t", "mf_rlefont_" + name + "_dictionary_data");
-    write_const_table(out, offsets, "uint16_t", "mf_rlefont_" + name + "_dictionary_offsets", 4);
+    write_const_table(out, data, "uint8_t", "mf_rlefont_" + name + "_dictionary_data", 1);
+    write_const_table(out, offsets, "uint16_t", "mf_rlefont_" + name + "_dictionary_offsets", 1, 4);
 }
 
 // Encode the data tables for a single character range.
@@ -78,8 +78,8 @@ static void encode_character_range(std::ostream &out,
         }
     }
     
-    write_const_table(out, data, "uint8_t", "mf_rlefont_" + name + "_glyph_data_" + std::to_string(range_index));
-    write_const_table(out, offsets, "uint16_t", "mf_rlefont_" + name + "_glyph_offsets_" + std::to_string(range_index), 4);
+    write_const_table(out, data, "uint8_t", "mf_rlefont_" + name + "_glyph_data_" + std::to_string(range_index), 1);
+    write_const_table(out, offsets, "uint16_t", "mf_rlefont_" + name + "_glyph_offsets_" + std::to_string(range_index), 1, 4);
 }
 
 void write_source(std::ostream &out, std::string name, const DataFile &datafile)

@@ -134,12 +134,12 @@ static void encode_character_range(std::ostream &out,
     }    
     offsets.push_back(data.size() / stride);
     
-    write_const_table(out, data, "uint8_t", "mf_bwfont_" + name + "_glyph_data_" + std::to_string(range_index));
+    write_const_table(out, data, "uint8_t", "mf_bwfont_" + name + "_glyph_data_" + std::to_string(range_index), 1);
     
     if (!constant_width)
     {
-        write_const_table(out, offsets, "uint16_t", "mf_bwfont_" + name + "_glyph_offsets_" + std::to_string(range_index), 4);
-        write_const_table(out, widths, "uint8_t", "mf_bwfont_" + name + "_glyph_widths_" + std::to_string(range_index));
+        write_const_table(out, offsets, "uint16_t", "mf_bwfont_" + name + "_glyph_offsets_" + std::to_string(range_index), 1, 4);
+        write_const_table(out, widths, "uint8_t", "mf_bwfont_" + name + "_glyph_widths_" + std::to_string(range_index), 1);
     }
 }
     

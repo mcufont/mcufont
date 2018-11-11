@@ -3,6 +3,17 @@
 #ifndef _MF_CONFIG_H_
 #define _MF_CONFIG_H_
 
+#ifdef __AVR__
+  #include <avr/pgmspace.h>
+#elif defined(ESP8266) || defined(ESP32)
+ #include <pgmspace.h>
+#else
+ #include <stdint.h>
+ #define PROGMEM
+ #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
+ #define pgm_read_word(addr) (*(const uint16_t *)(addr))
+#endif /* __AVR__ */
+
 
 /*******************************************************
  * Configuration settings related to build environment *

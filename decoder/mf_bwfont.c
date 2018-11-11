@@ -71,7 +71,7 @@ static uint8_t render_char(const struct mf_bwfont_char_range_s *r,
         p = data + byte;
         for (x = 0; x < num_cols; x++, p += stride)
         {
-            newstate = *p & mask;
+            newstate = pgm_read_byte(p) & mask;
             if (newstate != oldstate)
             {
                 if (oldstate && runlen)
