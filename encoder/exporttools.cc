@@ -49,11 +49,11 @@ void wordwrap_vector(std::ostream &out, const std::vector<unsigned> &data,
 
 // Write a vector of integers as a C constant array of given datatype.
  void write_const_table(std::ostream &out, const std::vector<unsigned> &data,
-                        const std::string &datatype, const std::string &tablename,
+                        const std::string &datatype, const std::string &tablename, char flg_is_data,
                         size_t width)
 {
     out << "static const " << datatype << " " << tablename;
-    out << "[" << data.size() << "] = {" << std::endl;
+    out << "[" << data.size() << "]" << ((flg_is_data)?" PROGMEM ":" ") << "= {" << std::endl;
     wordwrap_vector(out, data, "    ", width);
     out << std::endl << "};" << std::endl;
     out << std::endl;
