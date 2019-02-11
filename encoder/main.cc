@@ -16,6 +16,7 @@
 #include <ctime>
 #include <map>
 #include "ccfixes.hh"
+#include "gb2312_in_ucs2.h"
 
 using namespace mcufont;
 
@@ -153,8 +154,14 @@ static status_t cmd_filter(const std::vector<std::string> &args)
         size_t pos = s.find('-');
         if (pos == std::string::npos)
         {
-            // Single char
-            allowed.insert(std::stoi(s, nullptr, 0));
+            if(s == "gb2312") {
+                allowed.insert(
+                    &gb2312_in_ucs2_codetable[0],
+                    &gb2312_in_ucs2_codetable[sizeof(gb2312_in_ucs2_codetable)/sizeof(gb2312_in_ucs2_codetable[0])]);
+            } else {
+                // Single char
+                allowed.insert(std::stoi(s, nullptr, 0));
+            }
         }
         else
         {
