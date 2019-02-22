@@ -6,8 +6,8 @@ ifneq ($(shell uname -s),Darwin)
 endif
 
 # Libfreetype
-CXXFLAGS += $(shell freetype-config --cflags)
-LDFLAGS += $(shell freetype-config --libs)
+CXXFLAGS += $(shell pkg-config freetype2 --cflags)
+LDFLAGS += $(shell pkg-config freetype2 --libs)
 
 # Class to represent font data internally
 OBJS = datafile.o
