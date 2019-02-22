@@ -4,8 +4,8 @@ CXXFLAGS += -ggdb
 LDFLAGS += -pthread --static
 
 # Libfreetype
-CXXFLAGS += $(shell freetype-config --cflags)
-LDFLAGS += $(shell freetype-config --libs)
+CXXFLAGS += $(shell pkg-config freetype2 --cflags)
+LDFLAGS += $(shell pkg-config freetype2 --libs)
 #FREETYPE2_LIB = ../ugfx/3rdparty/freetype-2.6.1
 #CXXFLAGS += -I$(FREETYPE2_LIB)/include
 #LDFLAGS += -I$(FREETYPE2_LIB)/lib -lfreetype
