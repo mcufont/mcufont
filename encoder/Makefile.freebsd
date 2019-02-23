@@ -40,8 +40,8 @@ INCDIR      = .
 # Apply some magic where necessary                                             #
 ################################################################################
 
-CPPFLAGS    += $(shell freetype-config --cflags)
-LDFLAGS     += $(shell freetype-config --libs)
+CPPFLAGS    += $(shell pkg-config freetype2 --cflags)
+LDFLAGS     += $(shell pkg-config freetype2 --libs)
 OBJS        += $(addsuffix .o,$(basename $(CPPSRCS:%.cpp=%.o)))
 
 
