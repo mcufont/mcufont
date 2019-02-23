@@ -298,8 +298,6 @@ void optimize_pass(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose)
 }
 
 // Execute multiple passes in parallel and take the one with the best result.
-// The amount of parallelism is hardcoded in order to retain deterministic
-// behaviour.
 void optimize_parallel(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbose, int num_threads = 4)
 {
     std::vector<DataFile> datafiles;
@@ -314,7 +312,7 @@ void optimize_parallel(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbos
         rnds.emplace_back(rnd());
     }
     
-    for (int i = 0; i < num_threads; i++)
+    for (unsigned long i = 0; i < num_threads; i++)
     {
         threads.emplace_back(new std::thread(optimize_pass,
                                              std::ref(datafiles.at(i)),
@@ -323,12 +321,12 @@ void optimize_parallel(DataFile &datafile, size_t &size, rnd_t &rnd, bool verbos
                                              verbose));
     }
     
-    for (int i = 0; i < num_threads; i++)
+    for (unsigned long i = 0; i < num_threads; i++)
     {
         threads.at(i)->join();
     }
     
-    int best = std::min_element(sizes.begin(), sizes.end()) - sizes.begin();
+    long best = std::min_element(sizes.begin(), sizes.end()) - sizes.begin();
     size = sizes.at(best);
     datafile = datafiles.at(best);
 }
@@ -399,6 +397,7 @@ void init_dictionary(DataFile &datafile)
 void optimize(DataFile &datafile, size_t iterations)
 {
     bool verbose = false;
+    int thread_count = std::thread::hardware_concurrency();
     rnd_t rnd(datafile.GetSeed());
     
     update_scores(datafile, verbose);
@@ -407,7 +406,7 @@ void optimize(DataFile &datafile, size_t iterations)
     
     for (size_t i = 0; i < iterations; i++)
     {
-        optimize_parallel(datafile, size, rnd, verbose);
+        optimize_parallel(datafile, size, rnd, verbose, thread_count);
     }
     
     std::uniform_int_distribution<size_t> dist(0, std::numeric_limits<uint32_t>::max());
