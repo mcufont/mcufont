@@ -5,7 +5,7 @@
 
 #ifdef __AVR__
   #include <avr/pgmspace.h>
-#elif defined(ESP8266) || defined(ESP32)
+#elif defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
  #include <pgmspace.h>
 #else
  #include <stdint.h>
