@@ -38,24 +38,33 @@ files each. For example, *DejaVuSans12.c* and *DejaVuSans12.h* are the
 DejaVu Sans font rendered at 12 pixels height. To render text using this
 font, you could do this::
 
-    #include "DejaVuSans12.h"
+    #include "fonts.h"
     #include <mcufont.h>
-    
-    static void pixel_callback(int16_t x, int16_t y, uint8_t count,
-                               uint8_t alpha, void *state)
-    {
-        /* Add code for drawing pixels to your screen here. */
-    }
-    
-    int main()
-    {
-        mf_render_aligned(&mf_rlefont_DejaVuSans12,
-                          10, 10, /* x0, y0 */
-                          MF_ALIGN_LEFT,
-                          "Hello, world!", 13,
-                          &pixel_callback, NULL);
-        return 0;
-    }
+
+    static void pixel_callback(int16_t x, int16_t y, uint8_t count, uint8_t alpha, void *state)
+        {
+        while (count--)
+            {
+                /* your code goes here, ex: drawPixel(x, y, alpha, color::black); */
+                x++;
+            }
+        }
+
+    static uint8_t char_callback(int16_t x0, int16_t y0, mf_char character, void *state)
+        {
+            return mf_render_character(&mf_rlefont_DejaVuSans12.font, x0, y0, character, &pixel_callback, state);
+        }
+
+    void main()
+        {
+            mf_render_aligned(
+                &mf_rlefont_DejaVuSans12.font,
+                0, 0,
+                MF_ALIGN_LEFT,
+                "Hello, World!", 13,
+                &char_callback, NULL);
+        }
+
 
 What happens here is that *mf_render_aligned* takes each character of the
 string "Hello, world!" in turn, and calls *mf_render_character* for them.
