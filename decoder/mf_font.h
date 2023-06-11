@@ -132,6 +132,6 @@ MF_EXTERN void mf_character_whitespace(const struct mf_font_s *font,
 MF_EXTERN const struct mf_font_s *mf_find_font(const char *name);
 
 /* Get the list of included fonts */
-MF_EXTERN const struct mf_font_list_s *mf_get_font_list();
+MF_EXTERN const struct mf_font_list_s *mf_get_font_list(void);
 
 #endif
