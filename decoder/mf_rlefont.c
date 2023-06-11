@@ -150,6 +150,7 @@ static void write_bin_codeword(const struct mf_rlefont_s *font,
                                 struct renderstate_r *rstate,
                                 uint8_t code)
 {
+    (void)font;
     uint8_t bitcount = fillentry_bitcount(code);
     uint8_t byte = code - DICT_START7BIT;
     uint8_t runlen = 0;
