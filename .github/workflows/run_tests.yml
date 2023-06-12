@@ -1,0 +1,45 @@
+name: Run tests on Ubuntu
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+jobs:
+  test_linux:
+    name: Test on Ubuntu 20.04
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Check out code from GitHub
+        uses: actions/checkout@v3
+        with:
+          path: mcufont
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install libfreetype-dev cxxtest imagemagick
+      
+      - name: Build and run tests
+        run: |
+          cd mcufont
+          make
+      
+      - name: Archive test case output
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: |
+            mcufont/tests/layout/*.bmp
+            mcufont/tests/layout/*.bmp.*
+
+      - name: Archive generated font files
+        uses: actions/upload-artifact@v3
+        with:
+          name: font-files
+          path: |
+            mcufont/fonts/*.c
+            mcufont/fonts/*.h
+
