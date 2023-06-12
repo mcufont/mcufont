@@ -36,7 +36,9 @@ program for testing the decoder and renderer.
 The example fonts will be built in the *fonts* subfolder, and consist of two
 files each. For example, *DejaVuSans12.c* and *DejaVuSans12.h* are the
 DejaVu Sans font rendered at 12 pixels height. To render text using this
-font, you could do this::
+font, you could do this:
+
+.. code-block:: C
 
     #include "fonts.h"
     #include <mcufont.h>
