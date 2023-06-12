@@ -66,7 +66,7 @@ static void write_pixels(struct renderstate_r *rstate, uint16_t count,
     uint8_t rowlen;
 
     /* Write row-by-row if the run spans multiple rows. */
-    while (rstate->x + count >= rstate->x_end)
+    while ((int32_t)rstate->x + count >= rstate->x_end)
     {
         rowlen = rstate->x_end - rstate->x;
         rstate->callback(rstate->x, rstate->y, rowlen, alpha, rstate->state);
