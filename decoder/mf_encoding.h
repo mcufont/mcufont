@@ -29,10 +29,10 @@ typedef const wchar_t * mf_str;
 
 /* Returns the next character in the string and advances the pointer.
  * When the string ends, returns 0 and leaves the pointer at the 0 byte.
- * 
+ *
  * str: Pointer to variable holding current location in string.
  *      Initialize it to the start of the string.
- * 
+ *
  * Returns: The next character, as unicode codepoint.
  */
 MF_EXTERN mf_char mf_getchar(mf_str *str);

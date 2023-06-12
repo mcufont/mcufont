@@ -8,7 +8,7 @@
 #include "datafile.hh"
 
 namespace mcufont {
-    
+
 // Convert a file name to a valid C identifier
 std::string filename_to_identifier(std::string name);
 
@@ -36,7 +36,7 @@ struct char_range_t
     uint16_t first_char;
     uint16_t char_count;
     std::vector<int> glyph_indices;
-    
+
     char_range_t(): first_char(0), char_count(0) {}
 };
 

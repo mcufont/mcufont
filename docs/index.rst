@@ -40,13 +40,13 @@ font, you could do this::
 
     #include "DejaVuSans12.h"
     #include <mcufont.h>
-    
+
     static void pixel_callback(int16_t x, int16_t y, uint8_t count,
                                uint8_t alpha, void *state)
     {
         /* Add code for drawing pixels to your screen here. */
     }
-    
+
     int main()
     {
         mf_render_aligned(&mf_rlefont_DejaVuSans12,

@@ -7,7 +7,7 @@ FONTDIR = ../../fonts
 # Directory containing the decoder source code.
 MFDIR = ../../decoder
 include $(MFDIR)/mcufont.mk
-          
+
 all: render_bmp
 
 render_bmp: render_bmp.c write_bmp.c $(MFSRC)

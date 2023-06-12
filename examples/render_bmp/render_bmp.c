@@ -23,7 +23,7 @@ typedef struct {
     int scale;
 } options_t;
 
-static const char default_text[] = 
+static const char default_text[] =
     "The quick brown fox jumps over the lazy dog. "
     "The quick brown fox jumps over the lazy dog. "
     "The quick brown fox jumps over the lazy dog. "
@@ -39,22 +39,22 @@ static const char usage_text[] =
     "    -w width    Width of the image to render.\n"
     "    -m margin   Margin in the image.\n"
     "    -s scale    Scale the font.\n";
-    
+
 /* Parse the command line options */
 static bool parse_options(int argc, const char **argv, options_t *options)
 {
     char align = 'j';
     const char **end = argv + argc;
-    
+
     memset(options, 0, sizeof(options_t));
-    
+
     options->fontname = mf_get_font_list()->font->short_name;
     options->filename = "out.bmp";
     options->text = default_text;
     options->width = 200;
     options->margin = 5;
     options->scale = 1;
-    
+
     while (argv != end)
     {
         const char *cmd = *argv++;
@@ -91,13 +91,13 @@ static bool parse_options(int argc, const char **argv, options_t *options)
             options->text = cmd;
         }
     }
-    
+
     if (!options->text)
     {
         printf("The text to render is missing.\n");
         return false;
     }
-    
+
     if (align == 'l')
     {
         options->alignment = MF_ALIGN_LEFT;
@@ -123,17 +123,17 @@ static bool parse_options(int argc, const char **argv, options_t *options)
         printf("Invalid alignment: %c\n", align);
         return false;
     }
-    
+
     if (options->width <= 0)
     {
         printf("Invalid width: %d\n", options->width);
         return false;
     }
-    
+
     /* Round to a multiple of 4 pixels */
     if (options->width % 4 != 0)
         options->width += 4 - options->width % 4;
-    
+
     return true;
 }
 
@@ -157,10 +157,10 @@ static void pixel_callback(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
     state_t *s = (state_t*)state;
     uint32_t pos;
     int16_t value;
-    
+
     if (y < 0 || y >= s->height) return;
     if (x < 0 || x + count >= s->width) return;
-    
+
     while (count--)
     {
         pos = (uint32_t)s->width * y + x;
@@ -168,7 +168,7 @@ static void pixel_callback(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
         value -= alpha;
         if (value < 0) value = 0;
         s->buffer[pos] = value;
-        
+
         x++;
     }
 }
@@ -185,7 +185,7 @@ static uint8_t character_callback(int16_t x, int16_t y, mf_char character,
 static bool line_callback(const char *line, uint16_t count, void *state)
 {
     state_t *s = (state_t*)state;
-    
+
     if (s->options->justify)
     {
         mf_render_justified(s->font, s->options->anchor, s->y,
@@ -218,34 +218,34 @@ int main(int argc, const char **argv)
     struct mf_scaledfont_s scaledfont;
     options_t options;
     state_t state = {};
-    
+
     if (!parse_options(argc - 1, argv + 1, &options))
     {
         printf(usage_text);
         return 1;
     }
-    
+
     font = mf_find_font(options.fontname);
-    
+
     if (!font)
     {
         printf("No such font: %s\n", options.fontname);
         return 2;
     }
-    
+
     if (options.scale > 1)
     {
         mf_scale_font(&scaledfont, font, options.scale, options.scale);
         font = &scaledfont.font;
     }
-    
+
     /* Count the number of lines that we need. */
     height = 0;
     mf_wordwrap(font, options.width - 2 * options.margin,
                 options.text, count_lines, &height);
     height *= font->height;
     height += 4;
-    
+
     /* Allocate and clear the image buffer */
     state.options = &options;
     state.width = options.width;
@@ -253,19 +253,19 @@ int main(int argc, const char **argv)
     state.buffer = malloc(options.width * height);
     state.y = 2;
     state.font = font;
-    
+
     /* Initialize image to white */
     memset(state.buffer, 255, options.width * height);
-    
+
     /* Render the text */
     mf_wordwrap(font, options.width - 2 * options.margin,
                 options.text, line_callback, &state);
-    
+
     /* Write out the bitmap */
     write_bmp(options.filename, state.buffer, state.width, state.height);
-    
+
     printf("Wrote %s\n", options.filename);
-    
+
     free(state.buffer);
     return 0;
 }

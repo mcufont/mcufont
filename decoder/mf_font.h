@@ -23,35 +23,35 @@ struct mf_font_s
 {
     /* Full name of the font, comes from the original font file. */
     const char *full_name;
-    
+
     /* Short name of the font, comes from file name. */
     const char *short_name;
-    
+
     /* Width and height of the character bounding box. */
     uint8_t width;
     uint8_t height;
-    
+
     /* Minimum and maximum tracking width of characters. */
     uint8_t min_x_advance;
     uint8_t max_x_advance;
-    
+
     /* Location of the text baseline relative to character. */
     int8_t baseline_x;
     uint8_t baseline_y;
-    
+
     /* Line height of the font (vertical advance). */
     uint8_t line_height;
-    
+
     /* Flags identifying various aspects of the font. */
     uint8_t flags;
-    
+
     /* Fallback character to use for missing glyphs. */
     mf_char fallback_character;
-    
+
     /* Function to get character width. Should return 0 if character is
      * not found. */
     uint8_t (*character_width)(const struct mf_font_s *font, mf_char character);
-    
+
     /* Function to render a character. Returns the character width or 0 if
      * character is not found. */
     uint8_t (*render_character)(const struct mf_font_s *font,
@@ -73,14 +73,14 @@ struct mf_font_list_s
 };
 
 
-/* Function to decode and render a single character. 
- * 
+/* Function to decode and render a single character.
+ *
  * font:      Pointer to the font definition.
  * x0, y0:    Upper left corner of the target area.
  * character: The character code (unicode) to render.
  * callback:  Callback function to write out the pixels.
  * state:     Free variable for caller to use (can be NULL).
- * 
+ *
  * Returns width of the character.
  */
 MF_EXTERN uint8_t mf_render_character(const struct mf_font_s *font,
@@ -95,7 +95,7 @@ MF_EXTERN uint8_t mf_render_character(const struct mf_font_s *font,
  *
  * font:      Pointer to the font definition.
  * character: The character code (unicode) to check width of.
- * 
+ *
  * Returns width of the character in pixels.
  */
 MF_EXTERN uint8_t mf_character_width(const struct mf_font_s *font,

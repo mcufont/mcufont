@@ -3,8 +3,8 @@
 #include <set>
 
 namespace mcufont {
-    
-    
+
+
 // Convert a file name to a valid C identifier
 std::string filename_to_identifier(std::string name)
 {
@@ -12,19 +12,19 @@ std::string filename_to_identifier(std::string name)
     size_t pos = name.find_last_of("/\\");
     if (pos != std::string::npos)
         name = name.substr(pos + 1);
-    
+
     // If the name contains a file extension, strip it.
     pos = name.find_first_of(".");
     if (pos != std::string::npos)
         name = name.substr(0, pos);
-    
+
     // Replace any special characters with _.
     for (pos = 0; pos < name.size(); pos++)
     {
         if (!isalnum(name.at(pos)))
             name.at(pos) = '_';
     }
-    
+
     return name;
 }
 
@@ -33,7 +33,7 @@ void wordwrap_vector(std::ostream &out, const std::vector<unsigned> &data,
                      const std::string &prefix, size_t width)
 {
     int values_per_column = (width <= 2) ? 16 : 8;
-    
+
     std::ios::fmtflags flags(out.flags());
     out << prefix;
     out << std::hex << std::setfill('0');
@@ -63,31 +63,31 @@ void wordwrap_vector(std::ostream &out, const std::vector<unsigned> &data,
     wordwrap_vector(out, data, "    ", width);
     out << std::endl << "};" << std::endl;
     out << std::endl;
-}    
+}
 
 int get_min_x_advance(const DataFile &datafile)
 {
     int min = datafile.GetGlyphEntry(0).width;
-    
+
     for (const DataFile::glyphentry_t &g : datafile.GetGlyphTable())
     {
         if (min > g.width)
             min = g.width;
     }
-    
+
     return min;
 }
 
 int get_max_x_advance(const DataFile &datafile)
 {
     int max = 0;
-    
+
     for (const DataFile::glyphentry_t &g : datafile.GetGlyphTable())
     {
         if (max < g.width)
             max = g.width;
     }
-    
+
     return max;
 }
 
@@ -95,7 +95,7 @@ int get_max_x_advance(const DataFile &datafile)
 int select_fallback_char(const DataFile &datafile)
 {
     std::set<int> chars;
-    
+
     size_t i = 0;
     for (const DataFile::glyphentry_t &g: datafile.GetGlyphTable())
     {
@@ -105,16 +105,16 @@ int select_fallback_char(const DataFile &datafile)
         }
         i++;
     }
-    
+
     if (chars.count(0xFFFD))
         return 0xFFFD; // Unicode replacement character
-    
+
     if (chars.count(0))
         return 0; // Used by many BDF fonts as replacement char
-    
+
     if (chars.count('?'))
         return '?';
-    
+
     return ' ';
 }
 
@@ -130,25 +130,25 @@ std::vector<char_range_t> compute_char_ranges(const DataFile &datafile,
     std::vector<char_range_t> result;
     std::map<size_t, size_t> char_to_glyph = datafile.GetCharToGlyphMap();
     std::vector<size_t> chars;
-    
+
     // Get list of all characters in numeric order.
     for (auto iter : char_to_glyph)
         chars.push_back(iter.first);
-    
+
     // Pick out ranges until we have processed all characters
     size_t i = 0;
     while (i < chars.size())
     {
         char_range_t range;
         range.first_char = chars.at(i);
-        
+
         // Find the point where there is a gap larger than minimum_gap.
         i++;
         while (i < chars.size() && chars.at(i) - chars.at(i - 1) < minimum_gap)
             i++;
-        
+
         uint16_t last_char = chars.at(i - 1);
-        
+
         // Then store the indices of glyphs for each character
         size_t data_length = 0;
         for (size_t j = range.first_char; j <= last_char; j++)
@@ -159,32 +159,32 @@ std::vector<char_range_t> compute_char_ranges(const DataFile &datafile,
                 range.glyph_indices.push_back(-1);
                 continue;
             }
-            
+
             int glyph_index = char_to_glyph[j];
-            
+
             // Monitor the amount of the data in the range and split it
             // if it grows too large.
             data_length += get_encoded_glyph_size(glyph_index);
             if (data_length > maximum_size)
             {
                 last_char = j - 1;
-                
+
                 // Return the rest of characters to be processed by next range.
                 while (chars.at(i-1) > last_char)
                     i--;
-                
+
                 break;
             }
-            
+
             range.glyph_indices.push_back(glyph_index);
         }
-        
+
         range.char_count = last_char - range.first_char + 1;
         result.push_back(range);
     }
-    
+
     return result;
 }
-    
-    
+
+
 }

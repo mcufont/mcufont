@@ -17,13 +17,13 @@ struct mf_rlefont_char_range_s
 {
     /* The number of the first character in this range. */
     uint16_t first_char;
-    
+
     /* The total count of characters in this range. */
     uint16_t char_count;
-    
+
     /* Lookup table with the start indices into glyph_data. */
     const uint16_t *glyph_offsets;
-    
+
     /* The encoded glyph data for glyphs in this range. */
     const uint8_t *glyph_data;
 };
@@ -32,29 +32,29 @@ struct mf_rlefont_char_range_s
 struct mf_rlefont_s
 {
     struct mf_font_s font;
-    
+
     /* Version of the font definition used. */
     const uint8_t version;
-    
+
     /* Big array of the data for all the dictionary entries. */
     const uint8_t *dictionary_data;
-    
+
     /* Lookup table with the start indices into dictionary_data.
      * Contains N+1 entries, so that the length of the entry can
      * be determined by subtracting from the next offset. */
     const uint16_t *dictionary_offsets;
-    
+
     /* Number of dictionary entries using the RLE encoding.
      * Entries starting at this index use the dictionary encoding. */
     const uint8_t rle_entry_count;
-    
+
     /* Total number of dictionary entries.
      * Entries after this are nonexistent. */
     const uint8_t dict_entry_count;
-    
+
     /* Number of discontinuous character ranges */
     const uint8_t char_range_count;
-    
+
     /* Array of the character ranges */
     const struct mf_rlefont_char_range_s *char_ranges;
 };

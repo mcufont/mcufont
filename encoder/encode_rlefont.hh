@@ -15,13 +15,13 @@ struct encoded_font_t
     // Each item is a byte. Top bit means the value in the original bitstream,
     // and the bottom 7 bits store the repetition count.
     typedef std::vector<uint8_t> rlestring_t;
-    
+
     // Reference encoded format for storing the glyphs.
     // Each item is a reference to the dictionary.
     // Values 0 and 1 are hardcoded to mean 0 and 1.
     // All other values mean dictionary entry at (i-2).
     typedef std::vector<uint8_t> refstring_t;
-    
+
     std::vector<rlestring_t> rle_dictionary;
     std::vector<refstring_t> ref_dictionary;
     std::vector<refstring_t> glyphs;
@@ -68,45 +68,45 @@ public:
         std::istringstream s(testfile);
         std::unique_ptr<DataFile> f = DataFile::Load(s);
         std::unique_ptr<encoded_font_t> e = encode_font(*f, false);
-        
+
         TS_ASSERT_EQUALS(e->glyphs.size(), 3);
-        
+
         // Expected values for dictionary
         encoded_font_t::rlestring_t dict0 = {0x01, 0xCE, 0x01, 0xCE};
         encoded_font_t::rlestring_t dict1 = {0x0C};
         encoded_font_t::rlestring_t dict2 = {0xFE};
         encoded_font_t::refstring_t dict3 = {24, 24};
-        
+
         TS_ASSERT(e->rle_dictionary.at(0) == dict0);
         TS_ASSERT(e->rle_dictionary.at(1) == dict1);
         TS_ASSERT(e->rle_dictionary.at(2) == dict2);
         TS_ASSERT(e->ref_dictionary.at(0) == dict3);
-        
+
         // Expected values for glyphs
         encoded_font_t::refstring_t glyph0 = {27, 27, 27};
         encoded_font_t::refstring_t glyph1 = {24, 0, 132, 25, 14};
         encoded_font_t::refstring_t glyph2 = {228, 26, 244, 14, 14, 14, 228, 26, 16};
-        
+
         TS_ASSERT_EQUALS(e->glyphs.at(0), glyph0);
         TS_ASSERT_EQUALS(e->glyphs.at(1), glyph1);
         TS_ASSERT_EQUALS(e->glyphs.at(2), glyph2);
     }
-    
+
     void testDecode()
     {
         std::istringstream s(testfile);
         std::unique_ptr<DataFile> f = DataFile::Load(s);
         std::unique_ptr<encoded_font_t> e = encode_font(*f, false);
-        
+
         for (size_t i = 0; i < 3; i++)
         {
             std::unique_ptr<DataFile::pixels_t> dec;
             dec = decode_glyph(*e, i, f->GetFontInfo());
-            
+
             TS_ASSERT_EQUALS(*dec, f->GetGlyphEntry(i).data);
         }
     }
-    
+
 private:
     static constexpr const char *testfile =
         "Version 1\n"

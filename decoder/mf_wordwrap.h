@@ -13,14 +13,14 @@
  * line:   Pointer to the beginning of the string for this line.
  * count:  Number of characters on the line.
  * state:  Free variable that was passed to wordwrap().
- * 
+ *
  * Returns: true to continue, false to stop after this line.
  */
 typedef bool (*mf_line_callback_t) (mf_str line, uint16_t count,
                                     void *state);
 
 /* Word wrap a piece of text. Calls the callback function for each line.
- * 
+ *
  * font:  Font to use for metrics.
  * width: Maximum line width in pixels.
  * text:  Pointer to the start of the text to process.
@@ -28,5 +28,5 @@ typedef bool (*mf_line_callback_t) (mf_str line, uint16_t count,
  */
 MF_EXTERN void mf_wordwrap(const struct mf_font_s *font, int16_t width,
                            mf_str text, mf_line_callback_t callback, void *state);
-              
+
 #endif
