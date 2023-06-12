@@ -17,7 +17,7 @@ DataFile::DataFile(const std::vector<dictentry_t> &dictionary,
     dictentry_t dummy = {};
     while (m_dictionary.size() < dictionarysize)
         m_dictionary.push_back(dummy);
-    
+
     UpdateLowScoreIndex();
 }
 
@@ -32,7 +32,7 @@ void DataFile::Save(std::ostream &file) const
     file << "LineHeight " << m_fontinfo.line_height << std::endl;
     file << "Flags " << m_fontinfo.flags << std::endl;
     file << "RandomSeed " << m_seed << std::endl;
-    
+
     for (const dictentry_t &d : m_dictionary)
     {
         if (d.replacement.size() != 0)
@@ -41,7 +41,7 @@ void DataFile::Save(std::ostream &file) const
             file << d.ref_encode << " " << d.replacement << std::endl;
         }
     }
-    
+
     for (const glyphentry_t &g : m_glyphtable)
     {
         file << "Glyph ";
@@ -61,15 +61,15 @@ std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
     std::vector<glyphentry_t> glyphtable;
     uint32_t seed = 1234;
     int version = -1;
-    
+
     std::string line;
     while (std::getline(file, line))
     {
         std::istringstream input(line);
         std::string tag;
-        
+
         input >> tag;
-        
+
         if (tag == "Version")
         {
             input >> version;
@@ -118,26 +118,26 @@ std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
             glyphentry_t g = {};
             std::string chars;
             input >> chars >> g.width >> g.data;
-            
+
             if ((int)g.data.size() != fontinfo.max_width * fontinfo.max_height)
                 throw std::runtime_error("wrong glyph data length: " + std::to_string(g.data.size()));
-            
+
             size_t pos = 0;
             while (pos < chars.size()) {
                 size_t p;
                 g.chars.push_back(std::stoi(chars.substr(pos), &p));
                 pos += p + 1;
             }
-            
+
             glyphtable.push_back(g);
         }
     }
-    
+
     if (version != DATAFILE_FORMAT_VERSION)
     {
         return std::unique_ptr<DataFile>(nullptr);
     }
-    
+
     std::unique_ptr<DataFile> result(new DataFile(dictionary, glyphtable, fontinfo));
     result->SetSeed(seed);
     return result;
@@ -146,7 +146,7 @@ std::unique_ptr<DataFile> DataFile::Load(std::istream &file)
 void DataFile::SetDictionaryEntry(size_t index, const dictentry_t &value)
 {
     m_dictionary.at(index) = value;
-    
+
     if (index == m_lowscoreindex ||
         m_dictionary.at(m_lowscoreindex).score > value.score)
     {
@@ -157,7 +157,7 @@ void DataFile::SetDictionaryEntry(size_t index, const dictentry_t &value)
 std::map<size_t, size_t> DataFile::GetCharToGlyphMap() const
 {
     std::map<size_t, size_t> char_to_glyph;
-    
+
     for (size_t i = 0; i < m_glyphtable.size(); i++)
     {
         for (size_t c: m_glyphtable[i].chars)
@@ -165,16 +165,16 @@ std::map<size_t, size_t> DataFile::GetCharToGlyphMap() const
             char_to_glyph[c] = i;
         }
     }
-    
+
     return char_to_glyph;
 }
 
 std::string DataFile::GlyphToText(size_t index) const
 {
     std::ostringstream os;
-    
+
     const char glyphchars[] = "....,,,,----XXXX";
-    
+
     for (int y = 0; y < m_fontinfo.max_height; y++)
     {
         for (int x = 0; x < m_fontinfo.max_width; x++)
@@ -184,7 +184,7 @@ std::string DataFile::GlyphToText(size_t index) const
         }
         os << std::endl;
     }
-    
+
     return os.str();
 }
 
@@ -194,11 +194,11 @@ void DataFile::UpdateLowScoreIndex()
     {
         return a.score < b.score;
     };
-    
+
     auto iter = std::min_element(m_dictionary.begin(),
                                  m_dictionary.end(),
                                  comparison);
-    
+
     m_lowscoreindex = iter - m_dictionary.begin();
 }
 
@@ -220,9 +220,9 @@ std::istream& operator>>(std::istream& is, DataFile::pixels_t& str)
 {
     char c;
     str.clear();
-    
+
     while (isspace(is.peek())) is.get();
-    
+
     while (is.get(c))
     {
         if (c >= '0' && c <= '9')
@@ -232,7 +232,7 @@ std::istream& operator>>(std::istream& is, DataFile::pixels_t& str)
         else
             break;
     }
-    
+
     return is;
 }
 

@@ -36,7 +36,7 @@ mf_kerning.c
 mf_wordwrap.c
   Optional word wrapping algorithm. Breaks a long text into lines, while trying
   to balance the consecutive lines so that they are less ragged.
-  
+
 mf_justify.c
   Optional justification and alignment algorithms. Allows rendering a piece
   of text so that it is either left, center or right aligned or justified at

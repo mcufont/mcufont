@@ -61,7 +61,7 @@ $(TARGET): $(OBJS)
 
 %.o: %.cc
 	@echo Compiling $^
-	@$(CPPC) $(CPPFLAGS) -c -o $@ $^ 
+	@$(CPPC) $(CPPFLAGS) -c -o $@ $^
 
 size: $(TARGET)
 	@echo

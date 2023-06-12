@@ -16,13 +16,13 @@ uint8_t mf_render_character(const struct mf_font_s *font,
 {
     uint8_t width;
     width = font->render_character(font, x0, y0, character, callback, state);
-    
+
     if (!width)
     {
         width = font->render_character(font, x0, y0, font->fallback_character,
                                        callback, state);
     }
-    
+
     return width;
 }
 
@@ -31,12 +31,12 @@ uint8_t mf_character_width(const struct mf_font_s *font,
 {
     uint8_t width;
     width = font->character_width(font, character);
-    
+
     if (!width)
     {
         width = font->character_width(font, font->fallback_character);
     }
-    
+
     return width;
 }
 
@@ -67,7 +67,7 @@ MF_EXTERN void mf_character_whitespace(const struct mf_font_s *font,
 {
     struct whitespace_state state = {255, 255, 0, 0};
     mf_render_character(font, 0, 0, character, whitespace_callback, &state);
-    
+
     if (state.min_x == 255 && state.min_y == 255)
     {
         /* Character is whitespace */
@@ -100,7 +100,7 @@ const struct mf_font_s *mf_find_font(const char *name)
 {
     const struct mf_font_list_s *f;
     f = MF_INCLUDED_FONTS;
-    
+
     while (f)
     {
         if (strequals(f->font->full_name, name) ||
@@ -108,10 +108,10 @@ const struct mf_font_s *mf_find_font(const char *name)
         {
             return f->font;
         }
-        
+
         f = f->next;
     }
-    
+
     return 0;
 }
 

@@ -22,16 +22,16 @@ public:
     {
         std::istringstream s(testfile);
         std::unique_ptr<DataFile> f = LoadBDF(s);
-        
+
         TS_ASSERT_EQUALS(f->GetFontInfo().name, "-Misc-Fixed-Medium-R-Normal--14-130-75-75-C-70-ISO8859-15");
         TS_ASSERT_EQUALS(f->GetFontInfo().max_width, 6);
         TS_ASSERT_EQUALS(f->GetFontInfo().max_height, 11);
         TS_ASSERT_EQUALS(f->GetGlyphCount(), 1);
         TS_ASSERT_EQUALS(f->GetGlyphEntry(0).chars.size(), 2);
     }
-    
+
 private:
-    static constexpr const char *testfile = 
+    static constexpr const char *testfile =
         "STARTFONT 2.1\n"
         "FONT -Misc-Fixed-Medium-R-Normal--14-130-75-75-C-70-ISO8859-15\n"
         "FONTBOUNDINGBOX 7 14 0 -2\n"

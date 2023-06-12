@@ -10,7 +10,7 @@
 struct mf_scaledfont_s
 {
     struct mf_font_s font;
-    
+
     const struct mf_font_s *basefont;
     uint8_t x_scale;
     uint8_t y_scale;
