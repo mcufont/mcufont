@@ -14,6 +14,7 @@ struct kerning_state_s
 static void fit_leftedge(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
                          void *state)
 {
+    (void)count;
     struct kerning_state_s *s = state;
     
     if (alpha > 7)

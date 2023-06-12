@@ -115,7 +115,7 @@ const struct mf_font_s *mf_find_font(const char *name)
     return 0;
 }
 
-const struct mf_font_list_s *mf_get_font_list()
+const struct mf_font_list_s *mf_get_font_list(void)
 {
     return MF_INCLUDED_FONTS;
 }
