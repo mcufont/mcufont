@@ -107,7 +107,7 @@ static bool append_char(const struct mf_font_s *font, int16_t width,
 {
     mf_str tmp = *text;
     mf_char c;
-    uint16_t w;
+    int16_t w;
 
     c = mf_getchar(&tmp);
     w = mf_character_width(font, c);
