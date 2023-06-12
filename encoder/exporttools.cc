@@ -39,10 +39,16 @@ void wordwrap_vector(std::ostream &out, const std::vector<unsigned> &data,
     out << std::hex << std::setfill('0');
     for (size_t i = 0; i < data.size(); i++)
     {
-        if (i % values_per_column == 0 && i != 0)
-            out << std::endl << prefix;
-        
-        out << "0x" << std::setw(width) << (int)data.at(i) << ", ";
+        if (i != 0) {
+            if (i % values_per_column == 0) {
+                out << std::endl << prefix;
+            }
+            else {
+                out << " ";
+            }
+        }
+
+        out << "0x" << std::setw(width) << (int)data.at(i) << ",";
     }
     out.flags(flags);
 }
