@@ -19,19 +19,30 @@ other hand, the purpose is not to compete with libfreetype and similar vector
 font rendering libraries, because they already exist.
 
 
+Example 
+=======
+.. image:: docs/images/example.png
+
+
 Overall structure
 =================
 The library consists of the encoder program, written in C++, and the decoder
-library, written in ansi C. The encoder runs on your PC and is used to import
+library, written in ANSI C. The encoder runs on your PC and is used to import
 and compress font files. The decoder runs on the target microcontroller and
 decompresses and renders the characters.
 
 
 Getting started
 ===============
-Once you download the library, run *make* in the root folder. This will build
-the encoder, encode a few example fonts and build a *render_bmp* example
-program for testing the decoder and renderer.
+In order to get started, download the library and install the following
+dependencies:
+
+- libfreetype
+- cxxtest
+
+Next, run *make* in the root folder. This will build the encoder, encode a few
+example fonts and build a *render_bmp* example program for testing the decoder
+and renderer.
 
 The example fonts will be built in the *fonts* subfolder, and consist of two
 files each. For example, *DejaVuSans12.c* and *DejaVuSans12.h* are the
@@ -81,7 +92,7 @@ Features and limitations
 
 - Pure C runtime
 - Support for importing .ttf and .bdf fonts
-- Small code size of the decoder library (1-5 kB depending on enabled features)
+- Small code size of the decoder library (1-5 kB depending on used features)
 - Abstract callback interface for writing to any kind of display
 - 16-level antialiased fonts
 - Uses libfreetype's high-quality hinting when importing .ttf fonts
@@ -91,7 +102,6 @@ Features and limitations
 *Limitations*
 
 - No support for runtime scaling of fonts
-- Slow encoding
 - No subpixel antialiasing (could be added in the future)
 
 
@@ -105,8 +115,7 @@ replaced if not available on the target platform:
 - *stdint.h* for declaration of *uint32_t* etc. datatypes
 - *stddef.h* for *wchar_t* if enabled (optional)
 
-The encoder also should compile on many kinds of platforms. It needs
-libfreetype, cxxtest and a C++ compiler to build.
+The encoder also should compile on many kinds of platforms.
 
 
 Debugging and testing

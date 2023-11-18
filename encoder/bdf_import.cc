@@ -23,6 +23,9 @@ static int hextoint(char c)
 
 static void parse_fontinfo(std::istream &file, DataFile::fontinfo_t &fontinfo)
 {
+    int font_ascent = 0;
+    int font_descent = 0;
+
     std::string line;
     while (std::getline(file, line))
     {
@@ -44,10 +47,26 @@ static void parse_fontinfo(std::istream &file, DataFile::fontinfo_t &fontinfo)
             fontinfo.baseline_x = - x;
             fontinfo.baseline_y = fontinfo.max_height + y;
         }
+        else if (tag == "FONT_DESCENT")
+        {
+            s >> font_descent;
+        }
+        else if (tag == "FONT_ASCENT")
+        {
+            s >> font_ascent;
+        }
         else if (tag == "STARTCHAR")
         {
             break;
         }
+    }
+
+    // Fix for fonts edited by Fony (http://hukka.ncn.fi/?fony)
+    int font_max_height = font_ascent + font_descent;
+    if (font_max_height != 0)
+    {
+        fontinfo.max_height = font_max_height;
+        fontinfo.baseline_y = font_ascent;
     }
 }
 
