@@ -21,6 +21,7 @@ typedef struct {
     int margin;
     int anchor;
     int scale;
+    int bitdepth;
 } options_t;
 
 static const char default_text[] =
@@ -38,9 +39,11 @@ static const char usage_text[] =
     "    -a l|c|r|j  Align left/center/right/justify.\n"
     "    -w width    Width of the image to render.\n"
     "    -m margin   Margin in the image.\n"
-    "    -s scale    Scale the font.\n";
+    "    -s scale    Scale the font.\n"
+    "    -b 1        Specify 1 to get 1bpp Bitdepth of an Image By default it will                be 8.\n";
 
 /* Parse the command line options */
+
 static bool parse_options(int argc, const char **argv, options_t *options)
 {
     char align = 'j';
@@ -54,6 +57,7 @@ static bool parse_options(int argc, const char **argv, options_t *options)
     options->width = 200;
     options->margin = 5;
     options->scale = 1;
+    options->Bitdepth = 8;
 
     while (argv != end)
     {
@@ -81,6 +85,10 @@ static bool parse_options(int argc, const char **argv, options_t *options)
         else if (strcmp(cmd, "-s") == 0 && argc)
         {
             options->scale = atoi(*argv++);
+        }
+        else if (strcmp(cmd, "-b") == 0 && argc)
+        {
+            options->bitdepth = atoi(*argv++);
         }
         else if (strcmp(cmd, "-h") == 0 || strcmp(cmd, "--help") == 0)
         {
@@ -129,7 +137,12 @@ static bool parse_options(int argc, const char **argv, options_t *options)
         printf("Invalid width: %d\n", options->width);
         return false;
     }
-
+    
+    options->text = default_text;
+    
+    options->fontname = "DejaVuSans12";
+    options->fontname = "DejaVuSerif32";
+    options->fontname = "DejaVuSans";
     /* Round to a multiple of 4 pixels */
     if (options->width % 4 != 0)
         options->width += 4 - options->width % 4;
@@ -147,6 +160,7 @@ typedef struct {
     uint16_t width;
     uint16_t height;
     uint16_t y;
+    uint8_t bitdepth;
     const struct mf_font_s *font;
 } state_t;
 
@@ -160,7 +174,8 @@ static void pixel_callback(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
 
     if (y < 0 || y >= s->height) return;
     if (x < 0 || x + count >= s->width) return;
-
+    
+    
     while (count--)
     {
         pos = (uint32_t)s->width * y + x;
@@ -171,14 +186,51 @@ static void pixel_callback(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
 
         x++;
     }
+    
 }
+
+static void pixel_callback_1bpp(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
+                           void *state)
+{
+    state_t *s = (state_t*)state;
+    uint32_t pos;
+    uint32_t remainder;
+
+    if (y < 0 || y >= s->height) return;
+    if (x < 0 || x + count >= s->width) return;
+  
+    while (count--)
+    {
+        pos = (uint32_t)(y*(s->width/8)) + (x/8);
+        if(x % 8 == 0)
+        {
+            remainder = 0;
+        }
+        else
+        {
+            remainder = x%8;
+        }
+        
+        s->buffer[pos] = s->buffer[pos] & (~(1 << (remainder)));
+        
+        x++;
+    }
+}
+
 
 /* Callback to render characters. */
 static uint8_t character_callback(int16_t x, int16_t y, mf_char character,
                                   void *state)
 {
     state_t *s = (state_t*)state;
-    return mf_render_character(s->font, x, y, character, pixel_callback, state);
+    if(s->bitdepth == 1)
+    {
+        return mf_render_character(s->font, x, y, character, pixel_callback_1bpp, state);
+    }
+    else
+    {
+        return mf_render_character(s->font, x, y, character, pixel_callback, state);
+    }
 }
 
 /* Callback to render lines. */
@@ -253,17 +305,26 @@ int main(int argc, const char **argv)
     state.buffer = malloc(options.width * height);
     state.y = 2;
     state.font = font;
+    state.bitdepth = options.bitdepth;
 
     /* Initialize image to white */
-    memset(state.buffer, 255, options.width * height);
-
+    
+    memset(state.buffer, 0xFF, options.width * height);
+    
     /* Render the text */
     mf_wordwrap(font, options.width - 2 * options.margin,
                 options.text, line_callback, &state);
 
     /* Write out the bitmap */
-    write_bmp(options.filename, state.buffer, state.width, state.height);
-
+    if(options.bitdepth == 1)
+    {
+        convertBitEndianness(state.buffer, state.width * state.height);
+        write_bmp_1bpp(options.filename, state.buffer, state.width, state.height);
+    }
+    else
+    {
+        write_bmp(options.filename, state.buffer, state.width, state.height);
+    }
     printf("Wrote %s\n", options.filename);
 
     free(state.buffer);
