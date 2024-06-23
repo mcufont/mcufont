@@ -96,14 +96,12 @@ int select_fallback_char(const DataFile &datafile)
 {
     std::set<int> chars;
 
-    size_t i = 0;
     for (const DataFile::glyphentry_t &g: datafile.GetGlyphTable())
     {
         for (size_t c: g.chars)
         {
             chars.insert(c);
         }
-        i++;
     }
 
     if (chars.count(0xFFFD))
