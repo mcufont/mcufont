@@ -132,7 +132,9 @@ static bool parse_glyph(std::istream &file, DataFile::glyphentry_t &glyph,
             if (nibble & (8 >> (x % 4)))
                 pixel = 15;
 
-            glyph.data.at(y * fontinfo.max_width + x0 + x) = pixel;
+            int idx = y * fontinfo.max_width + x0 + x;
+            if (idx >= 0 && idx < glyph.data.size())
+                glyph.data.at(idx) = pixel;
         }
 
         y++;
