@@ -1,4 +1,5 @@
 #include "freetype_import.hh"
+#include "verbose.hh"
 #include "importtools.hh"
 #include <map>
 #include <string>
@@ -112,6 +113,12 @@ std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size, bool bw)
     charcode = FT_Get_First_Char(face, &gindex);
     while (gindex)
     {
+        if (mcufont::verbose())
+        {
+            std::cout << "Processing char 0x" << std::hex << charcode
+                      << std::dec << " (glyph " << gindex << ")" << std::endl;
+        }
+
         try
         {
             checkFT(FT_Load_Glyph(face, gindex, loadmode));

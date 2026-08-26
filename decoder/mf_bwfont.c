@@ -102,9 +102,9 @@ static uint8_t render_char(const struct mf_bwfont_char_range_s *r,
     return get_width(r, index);
 }
 
-uint8_t mf_bwfont_render_character(const struct mf_font_s *font,
-                                   int16_t x0, int16_t y0,
-                                   uint16_t character,
+uint16_t mf_bwfont_render_character(const struct mf_font_s *font,
+                                    int16_t x0, int16_t y0,
+                                    uint16_t character,
                                    mf_pixel_callback_t callback,
                                    void *state)
 {
@@ -119,8 +119,8 @@ uint8_t mf_bwfont_render_character(const struct mf_font_s *font,
     return render_char(range, x0, y0, index, callback, state);
 }
 
-uint8_t mf_bwfont_character_width(const struct mf_font_s *font,
-                                  uint16_t character)
+uint16_t mf_bwfont_character_width(const struct mf_font_s *font,
+                                   uint16_t character)
 {
     const struct mf_bwfont_s *bwfont = (const struct mf_bwfont_s*)font;
     const struct mf_bwfont_char_range_s *range;

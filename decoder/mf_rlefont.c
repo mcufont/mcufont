@@ -244,14 +244,14 @@ static void write_glyph_codeword(const struct mf_rlefont_s *font,
 }
 
 
-uint8_t mf_rlefont_render_character(const struct mf_font_s *font,
+uint16_t mf_rlefont_render_character(const struct mf_font_s *font,
                                     int16_t x0, int16_t y0,
                                     uint16_t character,
                                     mf_pixel_callback_t callback,
                                     void *state)
 {
     const uint8_t *p;
-    uint8_t width;
+    uint16_t width;
 
     struct renderstate_r rstate;
     rstate.x_begin = x0;
@@ -266,7 +266,8 @@ uint8_t mf_rlefont_render_character(const struct mf_font_s *font,
     if (!p)
         return 0;
 
-    width = pgm_read_byte(p++);
+    width = pgm_read_byte(p) | ((uint16_t)pgm_read_byte(p + 1) << 8);
+    p += 2;
     while (rstate.y < rstate.y_end)
     {
         write_glyph_codeword((struct mf_rlefont_s*)font, &rstate, pgm_read_byte(p++));
@@ -275,13 +276,13 @@ uint8_t mf_rlefont_render_character(const struct mf_font_s *font,
     return width;
 }
 
-uint8_t mf_rlefont_character_width(const struct mf_font_s *font,
-                                   uint16_t character)
+uint16_t mf_rlefont_character_width(const struct mf_font_s *font,
+                                    uint16_t character)
 {
     const uint8_t *p;
     p = find_glyph((struct mf_rlefont_s*)font, character);
     if (!p)
         return 0;
 
-    return pgm_read_byte(p);
+    return pgm_read_byte(p) | ((uint16_t)pgm_read_byte(p + 1) << 8);
 }

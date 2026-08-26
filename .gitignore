@@ -1,3 +1,8 @@
 *~
 *.o
 .vscode
+
+# Host encoder build artifacts
+encoder/mcufont
+examples/render_bmp/render_bmp
+*.dSYM/

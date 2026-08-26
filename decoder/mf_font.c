@@ -8,13 +8,13 @@
 #include MF_FONT_FILE_NAME
 /* Include fonts end here */
 
-uint8_t mf_render_character(const struct mf_font_s *font,
-                            int16_t x0, int16_t y0,
-                            mf_char character,
-                            mf_pixel_callback_t callback,
-                            void *state)
+uint16_t mf_render_character(const struct mf_font_s *font,
+                             int16_t x0, int16_t y0,
+                             mf_char character,
+                             mf_pixel_callback_t callback,
+                             void *state)
 {
-    uint8_t width;
+    uint16_t width;
     width = font->render_character(font, x0, y0, character, callback, state);
 
     if (!width)
@@ -26,10 +26,10 @@ uint8_t mf_render_character(const struct mf_font_s *font,
     return width;
 }
 
-uint8_t mf_character_width(const struct mf_font_s *font,
-                           mf_char character)
+uint16_t mf_character_width(const struct mf_font_s *font,
+                            mf_char character)
 {
-    uint8_t width;
+    uint16_t width;
     width = font->character_width(font, character);
 
     if (!width)
@@ -42,8 +42,8 @@ uint8_t mf_character_width(const struct mf_font_s *font,
 
 struct whitespace_state
 {
-    uint8_t min_x, min_y;
-    uint8_t max_x, max_y;
+    uint16_t min_x, min_y;
+    uint16_t max_x, max_y;
 };
 
 static void whitespace_callback(int16_t x, int16_t y, uint8_t count,
@@ -62,13 +62,13 @@ static void whitespace_callback(int16_t x, int16_t y, uint8_t count,
 
 MF_EXTERN void mf_character_whitespace(const struct mf_font_s *font,
                                        mf_char character,
-                                       uint8_t *left, uint8_t *top,
-                                       uint8_t *right, uint8_t *bottom)
+                                       uint16_t *left, uint16_t *top,
+                                       uint16_t *right, uint16_t *bottom)
 {
-    struct whitespace_state state = {255, 255, 0, 0};
+    struct whitespace_state state = {UINT16_MAX, UINT16_MAX, 0, 0};
     mf_render_character(font, 0, 0, character, whitespace_callback, &state);
 
-    if (state.min_x == 255 && state.min_y == 255)
+    if (state.min_x == UINT16_MAX && state.min_y == UINT16_MAX)
     {
         /* Character is whitespace */
         if (left) *left = font->width;

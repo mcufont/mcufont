@@ -7,8 +7,9 @@
 
 #include "mf_font.h"
 
-/* Versions of the RLE font format that are supported. */
-#define MF_RLEFONT_VERSION_4_SUPPORTED 1
+/* Versions of the RLE font format that are supported.
+ * Version 5 stores the per-glyph width as 16 bits instead of 8. */
+#define MF_RLEFONT_VERSION_5_SUPPORTED 1
 
 /* Structure for a range of characters. This implements a sparse storage of
  * character indices, so that you can e.g. pick a 100 characters in the middle
@@ -61,13 +62,13 @@ struct mf_rlefont_s
 
 #ifdef MF_RLEFONT_INTERNALS
 /* Internal functions, don't use these directly. */
-MF_EXTERN uint8_t mf_rlefont_render_character(const struct mf_font_s *font,
+MF_EXTERN uint16_t mf_rlefont_render_character(const struct mf_font_s *font,
                                               int16_t x0, int16_t y0,
                                               mf_char character,
                                               mf_pixel_callback_t callback,
                                               void *state);
 
-MF_EXTERN uint8_t mf_rlefont_character_width(const struct mf_font_s *font,
+MF_EXTERN uint16_t mf_rlefont_character_width(const struct mf_font_s *font,
                                              mf_char character);
 #endif
 

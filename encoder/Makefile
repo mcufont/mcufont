@@ -25,7 +25,9 @@ OBJS += encode_rlefont.o optimize_rlefont.o export_rlefont.o
 OBJS += export_bwfont.o
 
 
-all: run_unittests mcufont
+# The unit tests need cxxtestgen, which is not commonly installed and is not
+# needed to encode a font. Build them explicitly with `make run_unittests`.
+all: mcufont
 
 clean:
 	rm -f unittests unittests.cc mcufont $(OBJS)

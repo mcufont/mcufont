@@ -28,19 +28,19 @@ struct mf_font_s
     const char *short_name;
 
     /* Width and height of the character bounding box. */
-    uint8_t width;
-    uint8_t height;
+    uint16_t width;
+    uint16_t height;
 
     /* Minimum and maximum tracking width of characters. */
-    uint8_t min_x_advance;
-    uint8_t max_x_advance;
+    uint16_t min_x_advance;
+    uint16_t max_x_advance;
 
     /* Location of the text baseline relative to character. */
-    int8_t baseline_x;
-    uint8_t baseline_y;
+    int16_t baseline_x;
+    uint16_t baseline_y;
 
     /* Line height of the font (vertical advance). */
-    uint8_t line_height;
+    uint16_t line_height;
 
     /* Flags identifying various aspects of the font. */
     uint8_t flags;
@@ -50,11 +50,11 @@ struct mf_font_s
 
     /* Function to get character width. Should return 0 if character is
      * not found. */
-    uint8_t (*character_width)(const struct mf_font_s *font, mf_char character);
+    uint16_t (*character_width)(const struct mf_font_s *font, mf_char character);
 
     /* Function to render a character. Returns the character width or 0 if
      * character is not found. */
-    uint8_t (*render_character)(const struct mf_font_s *font,
+    uint16_t (*render_character)(const struct mf_font_s *font,
                                 int16_t x0, int16_t y0,
                                 mf_char character,
                                 mf_pixel_callback_t callback,
@@ -83,11 +83,11 @@ struct mf_font_list_s
  *
  * Returns width of the character.
  */
-MF_EXTERN uint8_t mf_render_character(const struct mf_font_s *font,
-                                      int16_t x0, int16_t y0,
-                                      mf_char character,
-                                      mf_pixel_callback_t callback,
-                                      void *state);
+MF_EXTERN uint16_t mf_render_character(const struct mf_font_s *font,
+                                       int16_t x0, int16_t y0,
+                                       mf_char character,
+                                       mf_pixel_callback_t callback,
+                                       void *state);
 
 /* Function to get the width of a single character.
  * This is not necessarily the bounding box of the character
@@ -98,8 +98,8 @@ MF_EXTERN uint8_t mf_render_character(const struct mf_font_s *font,
  *
  * Returns width of the character in pixels.
  */
-MF_EXTERN uint8_t mf_character_width(const struct mf_font_s *font,
-                                     mf_char character);
+MF_EXTERN uint16_t mf_character_width(const struct mf_font_s *font,
+                                      mf_char character);
 
 /* Count the amount of white space at the borders of a character.
  *
@@ -117,8 +117,8 @@ MF_EXTERN uint8_t mf_character_width(const struct mf_font_s *font,
  */
 MF_EXTERN void mf_character_whitespace(const struct mf_font_s *font,
                                        mf_char character,
-                                       uint8_t *left, uint8_t *top,
-                                       uint8_t *right, uint8_t *bottom);
+                                       uint16_t *left, uint16_t *top,
+                                       uint16_t *right, uint16_t *bottom);
 
 /* Find a font based on name. The name can be either short name or full name.
  * Note: You can pass MF_INCLUDED_FONTS to search among all the included .h

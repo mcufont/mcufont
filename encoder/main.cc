@@ -17,6 +17,7 @@
 #include <map>
 #include "ccfixes.hh"
 #include "gb2312_in_ucs2.h"
+#include "verbose.hh"
 
 using namespace mcufont;
 
@@ -434,7 +435,10 @@ static status_t cmd_bwfont_export(const std::vector<std::string> &args)
 
 
 static const char *usage_msg =
-    "Usage: mcufont <command> [options] ...\n"
+    "Usage: mcufont [-v] <command> [options] ...\n"
+    "\n"
+    "   -v, --verbose                        Print progress while importing and optimizing.\n"
+    "\n"
     "Commands for importing:\n"
     "   import_ttf <ttffile> <size> [bw]     Import a .ttf font into a data file.\n"
     "   import_bdf <bdffile>                 Import a .bdf font into a data file.\n"
@@ -470,7 +474,14 @@ int main(int argc, char **argv)
 {
     std::vector<std::string> args;
     for (int i = 1; i < argc; i++)
-        args.push_back(argv[i]);
+    {
+        std::string arg = argv[i];
+
+        if (arg == "-v" || arg == "--verbose")
+            mcufont::verbose() = true;
+        else
+            args.push_back(arg);
+    }
 
     status_t status = STATUS_INVALID;
     if (args.size() >= 1 && command_list.count(args.at(0)))

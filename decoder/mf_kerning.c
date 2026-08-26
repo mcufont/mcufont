@@ -6,8 +6,8 @@
 /* Structure for keeping track of the edge of the glyph as it is rendered. */
 struct kerning_state_s
 {
-    uint8_t edgepos[MF_KERNING_ZONES];
-    uint8_t zoneheight;
+    uint16_t edgepos[MF_KERNING_ZONES];
+    uint16_t zoneheight;
 };
 
 /* Pixel callback for analyzing the left edge of a glyph. */
@@ -19,7 +19,7 @@ static void fit_leftedge(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
 
     if (alpha > 7)
     {
-        uint8_t zone = y / s->zoneheight;
+        uint16_t zone = y / s->zoneheight;
         if (x < s->edgepos[zone])
             s->edgepos[zone] = x;
     }
@@ -33,7 +33,7 @@ static void fit_rightedge(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
 
     if (alpha > 7)
     {
-        uint8_t zone = y / s->zoneheight;
+        uint16_t zone = y / s->zoneheight;
         x += count - 1;
         if (x > s->edgepos[zone])
             s->edgepos[zone] = x;
@@ -59,11 +59,11 @@ static bool do_kerning(mf_char c)
 static int16_t max16(int16_t a, int16_t b) { return (a > b) ? a : b; }
 static int16_t avg16(int16_t a, int16_t b) { return (a + b) / 2; }
 
-int8_t mf_compute_kerning(const struct mf_font_s *font,
+int16_t mf_compute_kerning(const struct mf_font_s *font,
                           mf_char c1, mf_char c2)
 {
     struct kerning_state_s leftedge, rightedge;
-    uint8_t w1, w2, i, min_space;
+    uint16_t w1, w2, i, min_space;
     int16_t normal_space, adjust, max_adjust;
 
     if (font->flags & MF_FONT_FLAG_MONOSPACE)
@@ -80,7 +80,7 @@ int8_t mf_compute_kerning(const struct mf_font_s *font,
     leftedge.zoneheight = rightedge.zoneheight = i;
     for (i = 0; i < MF_KERNING_ZONES; i++)
     {
-        leftedge.edgepos[i] = 255;
+        leftedge.edgepos[i] = UINT16_MAX;
         rightedge.edgepos[i] = 0;
     }
 
@@ -89,11 +89,11 @@ int8_t mf_compute_kerning(const struct mf_font_s *font,
     w2 = mf_render_character(font, 0, 0, c2, fit_leftedge, &leftedge);
 
     /* Find the minimum horizontal space between the glyphs. */
-    min_space = 255;
+    min_space = UINT16_MAX;
     for (i = 0; i < MF_KERNING_ZONES; i++)
     {
-        uint8_t space;
-        if (leftedge.edgepos[i] == 255 || rightedge.edgepos[i] == 0)
+        uint16_t space;
+        if (leftedge.edgepos[i] == UINT16_MAX || rightedge.edgepos[i] == 0)
             continue; /* Outside glyph area. */
 
         space = w1 - rightedge.edgepos[i] + leftedge.edgepos[i];
@@ -101,7 +101,7 @@ int8_t mf_compute_kerning(const struct mf_font_s *font,
             min_space = space;
     }
 
-    if (min_space == 255)
+    if (min_space == UINT16_MAX)
         return 0; /* One of the characters is space, or both are punctuation. */
 
     /* Compute the adjustment of the glyph position. */

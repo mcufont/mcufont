@@ -26,26 +26,26 @@ static void scaled_pixel_callback(int16_t x, int16_t y, uint8_t count,
     }
 }
 
-static uint8_t scaled_character_width(const struct mf_font_s *font,
-                                      mf_char character)
+static uint16_t scaled_character_width(const struct mf_font_s *font,
+                                       mf_char character)
 {
     struct mf_scaledfont_s *sfont = (struct mf_scaledfont_s*)font;
-    uint8_t basewidth;
+    uint16_t basewidth;
 
     basewidth = sfont->basefont->character_width(sfont->basefont, character);
 
     return sfont->x_scale * basewidth;
 }
 
-static uint8_t scaled_render_character(const struct mf_font_s *font,
-                                       int16_t x0, int16_t y0,
-                                       mf_char character,
-                                       mf_pixel_callback_t callback,
-                                       void *state)
+static uint16_t scaled_render_character(const struct mf_font_s *font,
+                                        int16_t x0, int16_t y0,
+                                        mf_char character,
+                                        mf_pixel_callback_t callback,
+                                        void *state)
 {
     struct mf_scaledfont_s *sfont = (struct mf_scaledfont_s*)font;
     struct scaled_renderstate rstate;
-    uint8_t basewidth;
+    uint16_t basewidth;
 
     rstate.orig_callback = callback;
     rstate.orig_state = state;

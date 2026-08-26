@@ -174,7 +174,7 @@ static void pixel_callback(int16_t x, int16_t y, uint8_t count, uint8_t alpha,
 }
 
 /* Callback to render characters. */
-static uint8_t character_callback(int16_t x, int16_t y, mf_char character,
+static uint16_t character_callback(int16_t x, int16_t y, mf_char character,
                                   void *state)
 {
     state_t *s = (state_t*)state;

@@ -1,4 +1,5 @@
 #include "optimize_rlefont.hh"
+#include "verbose.hh"
 #include "encode_rlefont.hh"
 #include <random>
 #include <iostream>
@@ -398,7 +399,7 @@ void init_dictionary(DataFile &datafile)
 
 void optimize(DataFile &datafile, size_t iterations)
 {
-    bool verbose = false;
+    bool verbose = mcufont::verbose();
     rnd_t rnd(datafile.GetSeed());
 
     update_scores(datafile, verbose);

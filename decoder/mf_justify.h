@@ -22,8 +22,8 @@ enum mf_align_t
  * state:       Free state variable for use by the callback.
  * Returns the width of the character.
  */
-typedef uint8_t (*mf_character_callback_t) (int16_t x0, int16_t y0,
-                                            mf_char character, void *state);
+typedef uint16_t (*mf_character_callback_t) (int16_t x0, int16_t y0,
+                                             mf_char character, void *state);
 
 /* Get width of a string in pixels.
  *

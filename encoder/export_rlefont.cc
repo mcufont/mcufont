@@ -9,7 +9,7 @@
 #include "exporttools.hh"
 #include "ccfixes.hh"
 
-#define RLEFONT_FORMAT_VERSION 4
+#define RLEFONT_FORMAT_VERSION 5
 
 namespace mcufont {
 namespace rlefont {
@@ -62,7 +62,7 @@ static void encode_character_range(std::ostream &out,
         else
         {
             encoded_font_t::refstring_t r;
-            int width = 0;
+            unsigned width = 0;
 
             if (glyph_index >= 0)
             {
@@ -73,7 +73,9 @@ static void encode_character_range(std::ostream &out,
             offsets.push_back(data.size());
             already_encoded[glyph_index] = data.size();
 
-            data.push_back(width);
+            /* Glyph width, little endian. */
+            data.push_back(width & 0xFF);
+            data.push_back((width >> 8) & 0xFF);
             data.insert(data.end(), r.begin(), r.end());
         }
     }
@@ -109,7 +111,7 @@ void write_source(std::ostream &out, std::string name, const DataFile &datafile)
     // Split the characters into ranges
     auto get_glyph_size = [&encoded](size_t i)
     {
-        return encoded->glyphs[i].size() + 1; // +1 byte for glyph width
+        return encoded->glyphs[i].size() + 2; // +2 bytes for glyph width
     };
     std::vector<char_range_t> ranges = compute_char_ranges(datafile,
         get_glyph_size, 65536, 16);
