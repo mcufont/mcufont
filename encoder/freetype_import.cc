@@ -73,7 +73,8 @@ static void readfile(std::istream &file, std::vector<char> &data)
     }
 }
 
-std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size, bool bw)
+std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size, bool bw,
+                                      const std::set<int> *charset)
 {
     std::vector<char> data;
     readfile(file, data);
@@ -113,6 +114,11 @@ std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size, bool bw)
     charcode = FT_Get_First_Char(face, &gindex);
     while (gindex)
     {
+        if (charset && !charset->count(static_cast<int>(charcode)))
+        {
+            charcode = FT_Get_Next_Char(face, charcode, &gindex);
+        }
+
         if (mcufont::verbose())
         {
             std::cout << "Processing char 0x" << std::hex << charcode
@@ -127,6 +133,7 @@ std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size, bool bw)
         {
             std::cerr << "Skipping glyph " << gindex << ": " << e.what() << std::endl;
             charcode = FT_Get_Next_Char(face, charcode, &gindex);
+            continue;
         }
 
         DataFile::glyphentry_t glyph;

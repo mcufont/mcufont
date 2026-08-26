@@ -17,8 +17,8 @@
 #include <map>
 #include "ccfixes.hh"
 #include "gb2312_in_ucs2.h"
-#include "charset.hh"
 #include "verbose.hh"
+#include "charset.hh"
 
 using namespace mcufont;
 
@@ -86,12 +86,23 @@ enum status_t
 
 static status_t cmd_import_ttf(const std::vector<std::string> &args)
 {
-    if (args.size() != 3 && args.size() != 4)
+    if (args.size() < 3)
         return STATUS_INVALID;
 
     std::string src = args.at(1);
     int size = std::stoi(args.at(2));
-    bool bw = (args.size() == 4 && args.at(3) == "bw");
+    bool bw = (args.size() >= 4 && args.at(3) == "bw");
+
+    std::set<int> charset;
+    try
+    {
+        charset = parse_charset(args, bw ? 4 : 3);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+        return STATUS_ERROR;
+    }
     std::string dest = strip_extension(src) + std::to_string(size) + (bw ? "bw" : "") + ".dat";
     std::ifstream infile(src);
 
@@ -103,7 +114,8 @@ static status_t cmd_import_ttf(const std::vector<std::string> &args)
 
     std::cout << "Importing " << src << " to " << dest << std::endl;
 
-    std::unique_ptr<DataFile> f = LoadFreetype(infile, size, bw);
+    std::unique_ptr<DataFile> f = LoadFreetype(infile, size, bw,
+                                               charset.empty() ? nullptr : &charset);
 
     mcufont::rlefont::init_dictionary(*f);
 
@@ -421,7 +433,11 @@ static const char *usage_msg =
     "   -v, --verbose                        Print progress while importing and optimizing.\n"
     "\n"
     "Commands for importing:\n"
-    "   import_ttf <ttffile> <size> [bw]     Import a .ttf font into a data file.\n"
+    "   import_ttf <ttffile> <size> [bw] [range] ...\n"
+    "                                        Import a .ttf font into a data file.\n"
+    "                                        With ranges, only those characters are\n"
+    "                                        rasterized -- much faster than importing\n"
+    "                                        the whole face and filtering afterwards.\n"
     "   import_bdf <bdffile>                 Import a .bdf font into a data file.\n"
     "\n"
     "Commands for inspecting and editing data files:\n"
