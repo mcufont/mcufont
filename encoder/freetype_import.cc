@@ -117,6 +117,7 @@ std::unique_ptr<DataFile> LoadFreetype(std::istream &file, int size, bool bw,
         if (charset && !charset->count(static_cast<int>(charcode)))
         {
             charcode = FT_Get_Next_Char(face, charcode, &gindex);
+            continue;
         }
 
         if (mcufont::verbose())
