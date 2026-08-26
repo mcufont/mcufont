@@ -17,6 +17,7 @@
 #include <map>
 #include "ccfixes.hh"
 #include "gb2312_in_ucs2.h"
+#include "charset.hh"
 #include "verbose.hh"
 
 using namespace mcufont;
@@ -147,34 +148,14 @@ static status_t cmd_filter(const std::vector<std::string> &args)
         return STATUS_INVALID;
 
     std::set<int> allowed;
-
-    // Parse arguments
-    for (size_t i = 2; i < args.size(); i++)
+    try
     {
-        std::string s = args.at(i);
-        size_t pos = s.find('-');
-        if (pos == std::string::npos)
-        {
-            if(s == "gb2312") {
-                allowed.insert(
-                    &gb2312_in_ucs2_codetable[0],
-                    &gb2312_in_ucs2_codetable[sizeof(gb2312_in_ucs2_codetable)/sizeof(gb2312_in_ucs2_codetable[0])]);
-            } else {
-                // Single char
-                allowed.insert(std::stoi(s, nullptr, 0));
-            }
-        }
-        else
-        {
-            // Range
-            int start = std::stoi(s.substr(0, pos), nullptr, 0);
-            int end = std::stoi(s.substr(pos + 1), nullptr, 0);
-
-            for (int j = start; j <= end; j++)
-            {
-                allowed.insert(j);
-            }
-        }
+        allowed = parse_charset(args, 2);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+        return STATUS_ERROR;
     }
 
     std::string src = args.at(1);
