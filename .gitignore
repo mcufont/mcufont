@@ -1,3 +1,4 @@
 *~
 *.o
 .vscode
+test/skip-layout-test
